@@ -90,8 +90,8 @@ if __name__ == '__main__':
     
     processed_data = datagen.get_radar_image_pairs(raw_data)
 
-    target_np = processed_data['log_full']
-    partial0_np = processed_data['log_partial0']
+    target_np = processed_data['polar_full']
+    partial0_np = processed_data['polar_partial0']
 
     plt.figure()
     plt.imshow(target_np)

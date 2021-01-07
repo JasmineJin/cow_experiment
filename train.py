@@ -116,15 +116,16 @@ if __name__ == '__main__':
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     print(device)
 
-    model = models.UNet2D(in_channels= 2, out_channels=1, mid_channels= 4, depth = 6, kernel_size= 3, padding = 1, dilation= 1, device = device, sig_layer = False)
+    model = models.UNet2D(in_channels= 2, out_channels=1, mid_channels= 4, depth = 6, kernel_size= 3, padding = 2, dilation= 2, device = device, sig_layer = True)
     train_net = False
 
     bce = nn.BCELoss(reduction = 'sum')
     mse = nn.MSELoss(reduction= 'sum')
     def custom_loss_fcn(output, target):
-        
-        # loss = torch.sum(torch.abs(torch.log((target + 10 ** (-12)) / (output + 10 **(-12)))))
-        loss = mse(output, target) + 0.0001 * torch.sum(torch.abs(output))
+        # target = target + 10 ** (-30)
+        # output = output + 10 ** (-30)
+        loss = 1 * torch.sum(torch.abs(target - output)) + 0.1 * torch.abs(torch.sum(torch.abs(target)) - torch.sum(torch.abs(output)))
+        # loss = mse(output, target) + 0.0001 * torch.sum(torch.abs(output))
         return loss
 
     train_bsz = 4
@@ -143,11 +144,11 @@ if __name__ == '__main__':
 
     optimizer = optim.Adam(model.parameters(), lr = 0.9, weight_decay= 0)
     scheduler = lr_scheduler.StepLR(
-        optimizer, step_size= 50, gamma= 0.9)
+        optimizer, step_size= 50, gamma= 0.5)
 
     num_epochs = 1000
 
-    sample_idx = np.random.randint(len(os.listdir(data_dir_train)))
+    sample_idx = 0 #np.random.randint(len(os.listdir(data_dir_train)))
     sample = train_dataset.__getitem__(sample_idx)
     train_torch = sample[net_input_name]
     target_torch = sample[target_name]
@@ -166,7 +167,7 @@ if __name__ == '__main__':
     final_output = model(train_torch)
     
     print('output size: ', final_output.size())
-    
+    print('l1 norm of output: ', torch.sum(final_output))
     output_np = final_output.cpu().detach().numpy()
     output_np = output_np[0, 0, :, :]
     target_np = target_torch.cpu().detach().numpy()

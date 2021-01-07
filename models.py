@@ -29,7 +29,7 @@ class DoubleConv2D(nn.Module):
             double_conv1 = nn.Sequential(
                 nn.Conv2d(mid_channels, out_channels, kernel_size=kernel_size, padding=padding, dilation = dilation, padding_mode= 'circular'),
                 nn.BatchNorm2d(out_channels),
-                nn.Sigmoid(),
+                # nn.Linear(),
             )
             conv_layers.append(double_conv1)
         else:
@@ -302,7 +302,7 @@ class DenseConv1D(nn.Module):
 
 if __name__ == '__main__':
     
-    myconv1d = DoubleConv2D(2, 4, kernel_size= 3, padding = 1, dilation = 1)
+    myconv1d = DoubleConv2D(2, 4, kernel_size= 3, padding = 2, dilation = 2)
     # myconv2d = DoubleConv2D(2, 4, kernel_size= 3, padding = 2, dilation = 1)
     summary(myconv1d, (2, 64, 128))
     # summary(myconv2d, (2, 64, 128))
