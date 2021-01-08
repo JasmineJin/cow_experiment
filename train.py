@@ -54,7 +54,7 @@ def train_model(model, device, train_dataloader, val_dataloader, net_input_name,
             epoch_train_loss +=  loss.item()
             num_div += 1
 
-            if num_div % 1 == 0:
+            if num_div % 1000 == 0:
                 print(num_div)
 
         if num_div > 0:
@@ -148,7 +148,7 @@ if __name__ == '__main__':
         return loss
 
     train_bsz = args.train_batch_size
-    data_dir_train = os.path.join('cloud_data', args.data_dir, 'train')
+    data_dir_train = os.path.join('cloud_data', args.data_dir, 'val')
     data_list_train = os.listdir(data_dir_train)
     train_dataset = mydata.PointDataSet(data_dir_train, data_list_train)
     train_dataloader = data.DataLoader(train_dataset, batch_size = train_bsz, shuffle= True, num_workers= 4)
@@ -222,4 +222,4 @@ if __name__ == '__main__':
             }, checkpoint_save_path)
 
 
-    
+    print('model saved')
