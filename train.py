@@ -54,7 +54,7 @@ def train_model(model, device, train_dataloader, val_dataloader, net_input_name,
             epoch_train_loss +=  loss.item()
             num_div += 1
 
-            if num_div % 1000 == 0:
+            if num_div % 100 == 0:
                 print(num_div)
 
         if num_div > 0:
