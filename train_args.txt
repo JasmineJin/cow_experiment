@@ -2,7 +2,7 @@
 4
 --train_net
 True
---data_dir_train
+--data_dir
 'points'
 --net_input_name
 'log_partial'
