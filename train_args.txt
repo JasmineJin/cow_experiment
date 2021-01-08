@@ -1,0 +1,16 @@
+--train_batch_size
+4
+--train_net
+True
+--data_dir_train
+'points'
+--net_input_name
+'log_partial'
+--target_name
+'log_full
+--learning_rate
+0.1
+--num_train_epochs
+5
+--model_name
+'single_point_model.pt'

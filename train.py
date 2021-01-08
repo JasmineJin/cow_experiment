@@ -113,11 +113,24 @@ def overfit_model(model, device, net_input, target, loss_fcn, scheduler, optimiz
     return model
 
 if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(fromfile_prefix_chars='@')
+    parser.add_argument('--train_batch_size', type = int, default = 4)
+    parser.add_argument('--train_net', type = bool, default = False)
+    parser.add_argument('--data_dir', type = str, default = '')
+    # parser.add_argument('--data_dir_val', type = str, default = '')
+    parser.add_argument('--net_input_name', type = str, default = '')
+    parser.add_argument('--target_name', type = str, default = '')
+    parser.add_argument('--learning_rate', type = float, default = 0.1)
+    parser.add_argument('--num_train_epochs', type = int, default = 5)
+    parser.add_argument('--model_name', type = str, default = '')
+    args = parser.parse_args(['@train_args.txt'])
+
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     print(device)
 
     model = models.UNet2D(in_channels= 2, out_channels=1, mid_channels= 4, depth = 6, kernel_size= 3, padding = 2, dilation= 2, device = device, sig_layer = True)
-    train_net = False
+    train_net = args.train_net
 
     bce = nn.BCELoss(reduction = 'sum')
     mse = nn.MSELoss(reduction= 'sum')
@@ -128,19 +141,19 @@ if __name__ == '__main__':
         # loss = mse(output, target) + 0.0001 * torch.sum(torch.abs(output))
         return loss
 
-    train_bsz = 4
-    data_dir_train = os.path.join('cloud_data', 'points', 'train')
+    train_bsz = args.train_batch_size
+    data_dir_train = os.path.join('cloud_data', args.data_dir, 'train')
     data_list_train = os.listdir(data_dir_train)
     train_dataset = mydata.PointDataSet(data_dir_train, data_list_train)
     train_dataloader = data.DataLoader(train_dataset, batch_size = train_bsz, shuffle= True, num_workers= 4)
 
-    data_dir_val = os.path.join('cloud_data', 'points', 'val')
+    data_dir_val = os.path.join('cloud_data', args.data_dir, 'val')
     data_list_val = os.listdir(data_dir_val)
     val_dataset = mydata.PointDataSet(data_dir_val, data_list_val)
     val_dataloader = data.DataLoader(val_dataset, batch_size = 1, shuffle= True, num_workers= 1)
 
-    net_input_name = 'log_partial'
-    target_name = 'log_full'
+    net_input_name = args.net_input_name
+    target_name = args.target_name
 
     optimizer = optim.Adam(model.parameters(), lr = 0.9, weight_decay= 0)
     scheduler = lr_scheduler.StepLR(
@@ -173,24 +186,24 @@ if __name__ == '__main__':
     target_np = target_torch.cpu().detach().numpy()
     target_np = target_np[0, 0, :, :]
 
-    plt.figure()
-    plt.imshow(target_np)
-    plt.title('target')
+    # plt.figure()
+    # plt.imshow(target_np)
+    # plt.title('target')
 
-    plt.figure()
-    plt.imshow(output_np)
-    plt.title('net output')
+    # plt.figure()
+    # plt.imshow(output_np)
+    # plt.title('net output')
 
-    plt.show()
+    # plt.show()
 
     experiment_name = 'single_point_experiment2d'    
     writer = SummaryWriter(experiment_name)
-    checkpoint_save_path = os.path.join('models_trained', 'single_point_model2d.pt')
+    checkpoint_save_path = os.path.join('single_point_model2d.pt')
     if train_net:
-        optimizer = optim.Adam(model.parameters(), lr = 0.1, weight_decay= 0)
+        optimizer = optim.Adam(model.parameters(), lr = args.learning_rate, weight_decay= 0)
         scheduler = lr_scheduler.StepLR(
             optimizer, step_size= 5, gamma= 0.5)
-        num_epochs = 1
+        num_epochs = args.num_train_epochs
 
         model = train_model(model, device, train_dataloader, val_dataloader, net_input_name, target_name, custom_loss_fcn, scheduler, optimizer, num_epochs, writer)
 
