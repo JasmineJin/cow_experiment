@@ -54,7 +54,7 @@ def train_model(model, device, train_dataloader, val_dataloader, net_input_name,
             epoch_train_loss +=  loss.item()
             num_div += 1
 
-            if num_div % 1000 == 0:
+            if num_div % 50 == 0:
                 print(num_div)
 
         if num_div > 0:
@@ -116,11 +116,13 @@ def overfit_model(model, device, net_input, target, loss_fcn, scheduler, optimiz
 
     return model
 
-if __name__ == '__main__':
+def parse_train_args():
 
     parser = argparse.ArgumentParser(fromfile_prefix_chars='@')
     parser.add_argument('--train_batch_size', type = int, default = 4)
     parser.add_argument('--train_net', type = bool, default = False)
+    parser.add_argument('--num_train', type = int, default = 1000)
+    parser.add_argument('--num_val', type = int, default = 100)
     parser.add_argument('--data_dir', type = str, default = '')
     # parser.add_argument('--data_dir_val', type = str, default = '')
     parser.add_argument('--net_input_name', type = str, default = '')
@@ -129,9 +131,12 @@ if __name__ == '__main__':
     parser.add_argument('--num_train_epochs', type = int, default = 5)
     parser.add_argument('--model_name', type = str, default = '')
     args = parser.parse_args(['@train_args.txt'])
+    return args
 
+if __name__ == '__main__':
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     print(device)
+    args = parse_train_args()
 
     model = models.UNet2D(in_channels= 2, out_channels=1, mid_channels= 4, depth = 6, kernel_size= 3, padding = 2, dilation= 2, device = device, sig_layer = True)
     train_net = args.train_net
@@ -204,7 +209,7 @@ if __name__ == '__main__':
 
     experiment_name = 'single_point_experiment2d'    
     writer = SummaryWriter(experiment_name)
-    checkpoint_save_path = os.path.join('single_point_model2d.pt')
+    checkpoint_save_path = args.model_name#os.path.join('single_point_model2d.pt')
     if train_net:
         optimizer = optim.Adam(model.parameters(), lr = args.learning_rate, weight_decay= 0)
         scheduler = lr_scheduler.StepLR(

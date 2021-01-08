@@ -17,13 +17,14 @@ print('finished importing stuff')
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print(device)
 
-data_dir = os.path.join('dataset', 'points', 'test')
-model_path = os.path.join('models_trained', 'point_model2d_final.pt')
-model_info = torch.load(model_path)
+data_dir = os.path.join('cloud_data', 'points', 'train')
+model_path = 'single_point_model2d.pt'
+# model_path = os.path.join('models_trained', 'point_model2d_final.pt')
+model_info = torch.load(model_path, map_location=torch.device('cpu'))
 model_weights = model_info['model_state_dict']
 print('loaded weights')
 
-model = models.UNet2D(in_channels= 2, out_channels=1, mid_channels= 4, depth = 6, kernel_size= 3, padding = 4, dilation= 2, device = device)
+model = models.UNet2D(in_channels= 2, out_channels=1, mid_channels= 4, depth = 6, kernel_size= 3, padding = 2, dilation= 2, device = device)
 model.load_state_dict(model_weights)
 model.to(device)
 model.eval()
@@ -35,16 +36,16 @@ def custom_loss_fcn(output, target):
     """
     bce loss plus l1-norm
     """
-    loss = bce(output, target) # + 0.0001 * torch.sum(torch.abs(output))
+    loss = mse(output, target) # + 0.0001 * torch.sum(torch.abs(output))
     return loss
 print('defined loss function')
 
-mydataset = mydata.PointDataSet(data_dir, size = -1)
+mydataset = mydata.PointDataSet(data_dir, os.listdir(data_dir))
 mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= True, num_workers= 1)
 print('created dataloader')
 
-net_input_name = 'xy_partial'
-target_name = 'xy_target'
+net_input_name = 'log_partial'
+target_name = 'log_full'
 show_data = True
 total_loss = 0.
 total_num = 0

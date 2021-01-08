@@ -1,5 +1,9 @@
 --train_batch_size
 8
+--num_train
+1000
+--num_val
+100
 --data_dir
 points
 --net_input_name
@@ -11,4 +15,6 @@ log_full
 --num_train_epochs
 1
 --model_name
-single_point_model_overfit.pt
+single_point_model.pt
+--train_net
+True
