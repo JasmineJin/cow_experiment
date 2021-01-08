@@ -15,4 +15,6 @@ log_full
 --num_train_epochs
 1
 --model_name
-single_point_model_overfit1.pt
+single_point_model.pt
+--train_net
+True
