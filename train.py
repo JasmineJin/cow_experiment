@@ -32,6 +32,7 @@ def train_model(model, device, train_dataloader, val_dataloader, net_input_name,
     best_model_wts = copy.deepcopy(model.state_dict())
     print('starting to train')
     for e in range(num_epochs):
+        print('training epoch ', e)
         epoch_train_loss = 0.
         num_div = 0
         model.train()
@@ -52,6 +53,9 @@ def train_model(model, device, train_dataloader, val_dataloader, net_input_name,
             optimizer.step()
             epoch_train_loss +=  loss.item()
             num_div += 1
+
+            if num_div % 1000 == 0:
+                print(num_div)
 
         if num_div > 0:
             epoch_train_loss = epoch_train_loss / num_div
@@ -137,7 +141,9 @@ if __name__ == '__main__':
     def custom_loss_fcn(output, target):
         # target = target + 10 ** (-30)
         # output = output + 10 ** (-30)
-        loss = 1 * torch.sum(torch.abs(target - output)) + 0.1 * torch.abs(torch.sum(torch.abs(target)) - torch.sum(torch.abs(output)))
+        min_target = torch.min(target)
+        min_output = torch.min(output)
+        loss = 1 * torch.sum(torch.abs(target - output)) + 0.1 * torch.abs(torch.sum(torch.abs(target - min_target)) - torch.sum(torch.abs(output - min_output)))
         # loss = mse(output, target) + 0.0001 * torch.sum(torch.abs(output))
         return loss
 
