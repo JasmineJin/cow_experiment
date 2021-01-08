@@ -135,7 +135,7 @@ if __name__ == '__main__':
 
     model = models.UNet2D(in_channels= 2, out_channels=1, mid_channels= 4, depth = 6, kernel_size= 3, padding = 2, dilation= 2, device = device, sig_layer = True)
     train_net = args.train_net
-
+    print('training set to ', train_net)
     bce = nn.BCELoss(reduction = 'sum')
     mse = nn.MSELoss(reduction= 'sum')
     def custom_loss_fcn(output, target):
