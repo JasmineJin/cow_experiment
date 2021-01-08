@@ -1,7 +1,7 @@
 --train_batch_size
 4
 --train_net
-True
+False
 --data_dir
 points
 --net_input_name
