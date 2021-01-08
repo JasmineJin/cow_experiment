@@ -229,10 +229,26 @@ def get_radar_image_pairs(radar_response):
         
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
+    import argparse
 
-    mode = 'val'
-    max_num_points = 1
-    num_samples = 1000
+    parser = argparse.ArgumentParser(description='set mode for data generation')
+    parser.add_argument('--mode', type = str, default = 'train')
+    parser.add_argument('--max_num_points', type = int, default = 1)
+    parser.add_argument('--num_samples', type = int, default = 1000)
+    args = parser.parse_args()
+
+    mode = args.mode
+    max_num_points = args.max_num_points
+    num_samples = args.num_samples
+    print(mode)
+    print(max_num_points)
+    print(num_samples)
+
+    
+    # if mode == 'val':
+    # mode = 'val'
+    # max_num_points = 1
+    # num_samples = 1000
     data_dir = os.path.join('cloud_data', 'points', mode)
     os.makedirs(data_dir, exist_ok = True)
     for num_points in range(1, max_num_points + 1):
