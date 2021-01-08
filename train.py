@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 import datagen
 from numpy.fft import fft, ifft
 
-def train_model(model, device, train_dataloader, val_dataloader, net_input_name, target_name, loss_fcn, scheduler, optimizer, num_epochs, writer):
+def train_model(model, device, train_dataloader, val_dataloader, net_input_name, target_name, loss_fcn, scheduler, optimizer, num_train, num_val, num_epochs, writer):
     
     model = model.to(device)
 
@@ -57,6 +57,9 @@ def train_model(model, device, train_dataloader, val_dataloader, net_input_name,
             if num_div % 50 == 0:
                 print(num_div)
 
+            if num_div >= num_train:
+                break
+
         if num_div > 0:
             epoch_train_loss = epoch_train_loss / num_div
         else:
@@ -80,6 +83,9 @@ def train_model(model, device, train_dataloader, val_dataloader, net_input_name,
 
             epoch_val_loss +=  loss.item()
             num_div += 1
+
+            if num_div >= num_val:
+                break
 
         if num_div > 0:
             epoch_val_loss = epoch_val_loss / num_div
@@ -147,9 +153,25 @@ if __name__ == '__main__':
         # target = target + 10 ** (-30)
         # output = output + 10 ** (-30)
         min_target = torch.min(target)
+        # target_plus = target - min_target
         min_output = torch.min(output)
+        # output_plus = output - min_output
+        # reg_part = torch.log(torch.sum(output_plus) / torch.sum(target_plus))
         loss = 1 * torch.sum(torch.abs(target - output)) + 0.1 * torch.abs(torch.sum(torch.abs(target - min_target)) - torch.sum(torch.abs(output - min_output)))
         # loss = mse(output, target) + 0.0001 * torch.sum(torch.abs(output))
+        # loss = error + 0.1 * reg_part
+        return loss
+    def custom_loss_fcn1(output, target):
+        # target = target + 10 ** (-30)
+        # output = output + 10 ** (-30)
+        min_target = torch.min(target)
+        target_plus = target - min_target
+        min_output = torch.min(output)
+        output_plus = output - min_output
+        reg_part = torch.log(torch.sum(output_plus) / torch.sum(target_plus))
+        error = 1 * torch.sum(torch.abs(target - output)) #+ 0.1 * torch.abs(torch.sum(torch.abs(target - min_target)) - torch.sum(torch.abs(output - min_output)))
+        # loss = mse(output, target) + 0.0001 * torch.sum(torch.abs(output))
+        loss = error + 0.1 * reg_part
         return loss
 
     train_bsz = args.train_batch_size
@@ -179,7 +201,7 @@ if __name__ == '__main__':
     target_torch = target_torch.unsqueeze(0)
     train_torch = train_torch.unsqueeze(0)
 
-    model = overfit_model(model, device, train_torch, target_torch, custom_loss_fcn, scheduler, optimizer, num_epochs)
+    model = overfit_model(model, device, train_torch, target_torch, custom_loss_fcn1, scheduler, optimizer, num_epochs)
     print('finished overfitting')
     # model.cuda()
     # model_overfitted.eval()
@@ -206,6 +228,9 @@ if __name__ == '__main__':
     # plt.title('net output')
 
     # plt.show()
+    
+    num_train = args.num_train
+    num_val = args.num_val
 
     experiment_name = 'single_point_experiment2d'    
     writer = SummaryWriter(experiment_name)
@@ -216,7 +241,7 @@ if __name__ == '__main__':
             optimizer, step_size= 5, gamma= 0.5)
         num_epochs = args.num_train_epochs
 
-        model = train_model(model, device, train_dataloader, val_dataloader, net_input_name, target_name, custom_loss_fcn, scheduler, optimizer, num_epochs, writer)
+        model = train_model(model, device, train_dataloader, val_dataloader, net_input_name, target_name, custom_loss_fcn1, scheduler, optimizer, num_train, num_val, num_epochs, writer)
 
     torch.save({'epoch': num_epochs, 
             'batchsize': train_bsz,
