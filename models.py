@@ -12,14 +12,14 @@ import queue
 class DoubleConv2D(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
 
-    def __init__(self, in_channels, out_channels, mid_channels=None, kernel_size = (3, 3), padding = (2, 2), dilation = (1, 1), final_layer = False):
+    def __init__(self, in_channels, out_channels, mid_channels=None, kernel_size = (3, 3), padding = (2, 2), dilation = (1, 1), stride = (1, 1), final_layer = False):
         super().__init__()
         conv_layers = []
         if not mid_channels:
             mid_channels = out_channels
         
         double_conv0 = nn.Sequential(
-            nn.Conv2d(in_channels, mid_channels, kernel_size=kernel_size, padding=padding, dilation = dilation, padding_mode= 'circular'),
+            nn.Conv2d(in_channels, mid_channels, kernel_size=kernel_size, padding=padding, dilation = dilation, stride = stride, padding_mode= 'circular'),
             nn.BatchNorm2d(mid_channels),
             nn.ReLU(inplace=True),
         )
@@ -27,14 +27,14 @@ class DoubleConv2D(nn.Module):
 
         if final_layer:
             double_conv1 = nn.Sequential(
-                nn.Conv2d(mid_channels, out_channels, kernel_size=kernel_size, padding=padding, dilation = dilation, padding_mode= 'circular'),
+                nn.Conv2d(mid_channels, out_channels, kernel_size=kernel_size, padding=padding, dilation = dilation, stride = stride, padding_mode= 'circular'),
                 nn.BatchNorm2d(out_channels),
                 # nn.Linear(),
             )
             conv_layers.append(double_conv1)
         else:
             double_conv1 = nn.Sequential(
-                nn.Conv2d(mid_channels, out_channels, kernel_size=kernel_size, padding=padding, dilation = dilation, padding_mode= 'circular'),
+                nn.Conv2d(mid_channels, out_channels, kernel_size=kernel_size, padding=padding, dilation = dilation, stride = stride, padding_mode= 'circular'),
                 nn.BatchNorm2d(out_channels),
                 nn.ReLU(inplace=True),
             )
@@ -46,14 +46,14 @@ class DoubleConv2D(nn.Module):
 class DoubleConv1D(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
 
-    def __init__(self, in_channels, out_channels, mid_channels=None,  kernel_size = 3, padding = 2, dilation = 1, final_layer = False):
+    def __init__(self, in_channels, out_channels, mid_channels=None,  kernel_size = 3, padding = 2, dilation = 1, stride = 1, final_layer = False):
         super().__init__()
         conv_layers = []
         if not mid_channels:
             mid_channels = out_channels
         
         double_conv0 = nn.Sequential(
-            nn.Conv1d(in_channels, mid_channels, kernel_size=kernel_size, padding=padding, dilation = dilation, padding_mode= 'circular'),
+            nn.Conv1d(in_channels, mid_channels, kernel_size=kernel_size, padding=padding, dilation = dilation, stride = stride, padding_mode= 'circular'),
             nn.BatchNorm1d(mid_channels),
             nn.ReLU(inplace=True),
         )
@@ -63,7 +63,7 @@ class DoubleConv1D(nn.Module):
             double_conv1 = nn.Sequential(
                 nn.Conv1d(mid_channels, out_channels, kernel_size=kernel_size, padding=padding, dilation = dilation, padding_mode= 'circular'),
                 nn.BatchNorm1d(out_channels),
-                nn.Sigmoid(),
+                # nn.Sigmoid(),
             )
             conv_layers.append(double_conv1)
         else:
@@ -118,10 +118,10 @@ class Down1D(nn.Module):
 class Down2D(nn.Module):
     """Upscaling then double conv"""
 
-    def __init__(self, in_channels = 2, out_channels =1, kernel_size = 3, padding = 2, dilation = 1):
+    def __init__(self, in_channels = 2, out_channels =1, kernel_size = 3, padding = 2, dilation = 1, stride = 1):
         super().__init__()
         self.maxpool = nn.MaxPool2d(2)
-        self.conv = DoubleConv2D(in_channels, out_channels, in_channels, kernel_size= kernel_size, padding = padding, dilation =  dilation)
+        self.conv = DoubleConv2D(in_channels, out_channels, in_channels, kernel_size= kernel_size, padding = padding, dilation =  dilation, stride =1)
         
     def forward(self, x):
         x = self.maxpool(x)
@@ -133,9 +133,9 @@ class UNet1D(nn.Module):
         self.down_layers = []
         self.up_layers = []
 
-        self.inlayer = DoubleConv1D(in_channels, mid_channels, mid_channels= mid_channels// 2, kernel_size= kernel_size, padding = padding, dilation = dilation)
+        self.inlayer = DoubleConv1D(in_channels, mid_channels, mid_channels= mid_channels// 2, kernel_size= kernel_size, padding = padding, dilation = dilation, stride = 2)
         # self.midlayer = DoubleConv1D(mid_channels * 2** depth, mid_channels * 2 ** (depth - 1), kernel_size= kernel_size, padding = padding, dilation = dilation)
-        self.outlayer = DoubleConv1D(mid_channels, out_channels, mid_channels= mid_channels// 2, kernel_size= kernel_size, padding = padding, dilation = dilation)
+        self.outlayer = DoubleConv1D(mid_channels, out_channels, mid_channels= mid_channels// 2, kernel_size= kernel_size, padding = padding, dilation = dilation, final_layer = True)
 
         for d in range(depth):
             downlayer = Down1D(mid_channels * 2 ** d, mid_channels * (2** (d + 1)), kernel_size= kernel_size, padding = padding, dilation = dilation)
@@ -302,9 +302,9 @@ class DenseConv1D(nn.Module):
 
 if __name__ == '__main__':
     
-    myconv1d = DoubleConv2D(2, 4, kernel_size= 3, padding = 2, dilation = 2)
+    myconv1d = UNet1D(256, 1, mid_channels = 128, depth = 6, kernel_size= 3, padding = 2, dilation = 2)
     # myconv2d = DoubleConv2D(2, 4, kernel_size= 3, padding = 2, dilation = 1)
-    summary(myconv1d, (2, 64, 128))
+    summary(myconv1d, (256, 1024))
     # summary(myconv2d, (2, 64, 128))
 
     # mydown1d = Down1D(2, 4, kernel_size=3, padding=2, dilation=1)

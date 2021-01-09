@@ -149,7 +149,7 @@ def get_radar_image_pairs(radar_response):
     normal_plot_real, x, y = trans.polar_to_rect(np.real(radar_ra_plot_thresholded), wl, num_channels, rng_vector, 256, 512)
     normal_plot_imag, x, y = trans.polar_to_rect(np.imag(radar_ra_plot_thresholded), wl, num_channels, rng_vector, 256, 512)
     normal_plot = np.abs(normal_plot_real + 1j * normal_plot_imag)
-    normal_plot = np.log10(normal_plot + 10** (-12))
+    # normal_plot = np.log10(normal_plot + 10** (-12))
 
     radar_ra_plot_partial0 = process_array(radar_response[:, 0: num_samples])
     thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot_partial0)), 25, 25)
@@ -158,7 +158,7 @@ def get_radar_image_pairs(radar_response):
     normal_plot_partial0_real, x, y = trans.polar_to_rect(np.real(radar_ra_plot_partial0_thresholded), wl, num_channels, rng_vector, 256, 512)
     normal_plot_partial0_imag, x, y = trans.polar_to_rect(np.imag(radar_ra_plot_partial0_thresholded), wl, num_channels, rng_vector, 256, 512)
     normal_plot_partial0 = np.abs(normal_plot_partial0_real + 1j * normal_plot_partial0_imag)
-    normal_plot_partial0 = np.log10(normal_plot_partial0 + 10 ** (-12))
+    # normal_plot_partial0 = np.log10(normal_plot_partial0 + 10 ** (-12))
 
     radar_ra_plot_partial1 = process_array(radar_response[:, num_channels - num_samples : num_channels])
     thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot_partial1)), 25, 25)
@@ -167,15 +167,15 @@ def get_radar_image_pairs(radar_response):
     normal_plot_partial1_real, x, y = trans.polar_to_rect(np.real(radar_ra_plot_partial1_thresholded), wl, num_channels, rng_vector, 256, 512)
     normal_plot_partial1_imag, x, y = trans.polar_to_rect(np.imag(radar_ra_plot_partial1_thresholded), wl, num_channels, rng_vector, 256, 512)
     normal_plot_partial1 = np.abs(normal_plot_partial1_real + 1j * normal_plot_partial1_imag)
-    normal_plot_partial1 = np.log10(normal_plot_partial1 + 10 ** (-12))
+    # normal_plot_partial1 = np.log10(normal_plot_partial1 + 10 ** (-12))
 
-    output = {'log_full': normal_plot, 
+    output = {'mag_full': normal_plot, 
                 'real_full': normal_plot_real,
                 'imag_full': normal_plot_imag,
-                'log_partial0': normal_plot_partial0, 
+                'mag_partial0': normal_plot_partial0, 
                 'real_partial0': normal_plot_partial0_real,
                 'imag_partial0': normal_plot_partial0_imag,
-                'log_partial1': normal_plot_partial1, 
+                'mag_partial1': normal_plot_partial1, 
                 'real_partial1': normal_plot_partial1_real,
                 'imag_partial1': normal_plot_partial1_imag,
                 'polar_full': np.abs(radar_ra_plot_thresholded),

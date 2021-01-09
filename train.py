@@ -34,7 +34,7 @@ def train_model(model, device, train_dataloader, val_dataloader, net_input_name,
     for e in range(num_epochs):
         print('training epoch ', e)
         epoch_train_loss = 0.
-        num_div = 0
+        num_div = 1
         model.train()
         for batch_idx, sample in enumerate(train_dataloader):
             train_torch = sample[net_input_name]
@@ -51,7 +51,9 @@ def train_model(model, device, train_dataloader, val_dataloader, net_input_name,
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            epoch_train_loss +=  loss.item()
+            sample_loss = loss.item()
+            epoch_train_loss += (sample_loss - epoch_train_loss) / num_div
+            # epoch_train_loss +=  loss.item()
             num_div += 1
 
             if num_div % 50 == 0:
@@ -60,15 +62,15 @@ def train_model(model, device, train_dataloader, val_dataloader, net_input_name,
             if num_div >= num_train:
                 break
 
-        if num_div > 0:
-            epoch_train_loss = epoch_train_loss / num_div
-        else:
-            epoch_train_loss = float('inf')
+        # if num_div > 0:
+        #     epoch_train_loss = epoch_train_loss / num_div
+        # else:
+        #     epoch_train_loss = float('inf')
         scheduler.step()
         writer.add_scalar('train loss', epoch_train_loss, e)
         
         epoch_val_loss = 0.
-        num_div = 0
+        num_div = 1
         
         print('train loss for epoch ', e, epoch_train_loss)
         model.eval()
@@ -81,16 +83,16 @@ def train_model(model, device, train_dataloader, val_dataloader, net_input_name,
             output = model(train_torch)
             loss =  loss_fcn(output, target_torch)
 
-            epoch_val_loss +=  loss.item()
+            epoch_val_loss +=  (loss.item() - epoch_val_loss) / num_div
             num_div += 1
 
             if num_div >= num_val:
                 break
 
-        if num_div > 0:
-            epoch_val_loss = epoch_val_loss / num_div
-        else:
-            epoch_val_loss = float('inf')
+        # if num_div > 0:
+        #     epoch_val_loss = epoch_val_loss / num_div
+        # else:
+        #     epoch_val_loss = float('inf')
 
         # if e % 10 == 0 or e < 10:
         print('val loss for epoch ', e, epoch_val_loss)
@@ -122,7 +124,7 @@ def overfit_model(model, device, net_input, target, loss_fcn, scheduler, optimiz
 
     return model
 
-def parse_train_args():
+def parse_train_args(file_name = '@train_args.txt'):
 
     parser = argparse.ArgumentParser(fromfile_prefix_chars='@')
     parser.add_argument('--train_batch_size', type = int, default = 4)
@@ -136,20 +138,18 @@ def parse_train_args():
     parser.add_argument('--learning_rate', type = float, default = 0.1)
     parser.add_argument('--num_train_epochs', type = int, default = 5)
     parser.add_argument('--model_name', type = str, default = '')
-    args = parser.parse_args(['@train_args.txt'])
+    parser.add_argument('--net_type', type = str, default= 'unet2d')
+    parser.add_argument('--in_channels', type = int, default= 2)
+    parser.add_argument('--out_channels', type = int, default = 1)
+    parser.add_argument('--mid_channels', type = int, default = 4)
+    parser.add_argument('--depth', type = int, default =6)
+    parser.add_argument('--kernel_size', type = int, default=3)
+    parser.add_argument('--dilation', type = int, default=2)
+    parser.add_argument('--padding', type = int, default =2)
+    args = parser.parse_args([file_name])
     return args
 
-if __name__ == '__main__':
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    print(device)
-    args = parse_train_args()
-
-    model = models.UNet2D(in_channels= 2, out_channels=1, mid_channels= 4, depth = 6, kernel_size= 3, padding = 2, dilation= 2, device = device, sig_layer = True)
-    train_net = args.train_net
-    print('training set to ', train_net)
-    bce = nn.BCELoss(reduction = 'sum')
-    mse = nn.MSELoss(reduction= 'sum')
-    def custom_loss_fcn(output, target):
+def custom_loss_fcn(output, target):
         # target = target + 10 ** (-30)
         # output = output + 10 ** (-30)
         min_target = torch.min(target)
@@ -161,18 +161,44 @@ if __name__ == '__main__':
         # loss = mse(output, target) + 0.0001 * torch.sum(torch.abs(output))
         # loss = error + 0.1 * reg_part
         return loss
-    def custom_loss_fcn1(output, target):
-        # target = target + 10 ** (-30)
-        # output = output + 10 ** (-30)
-        min_target = torch.min(target)
-        target_plus = target - min_target
-        min_output = torch.min(output)
-        output_plus = output - min_output
-        reg_part = torch.log(torch.sum(output_plus) / torch.sum(target_plus))
-        error = 1 * torch.sum(torch.abs(target - output)) #+ 0.1 * torch.abs(torch.sum(torch.abs(target - min_target)) - torch.sum(torch.abs(output - min_output)))
-        # loss = mse(output, target) + 0.0001 * torch.sum(torch.abs(output))
-        loss = error + 0.1 * reg_part
-        return loss
+def custom_loss_fcn1(output, target):
+    # target = target + 10 ** (-30)
+    # output = output + 10 ** (-30)
+    min_target = torch.min(target)
+    target_plus = target - min_target
+    min_output = torch.min(output)
+    output_plus = output - min_output
+    reg_part = torch.log(torch.sum(output_plus) / torch.sum(target_plus))
+    error = 1 * torch.sum(torch.abs(target - output)) #+ 0.1 * torch.abs(torch.sum(torch.abs(target - min_target)) - torch.sum(torch.abs(output - min_output)))
+    # loss = mse(output, target) + 0.0001 * torch.sum(torch.abs(output))
+    loss = error + 0.1 * reg_part
+    return loss
+
+mse = nn.MSELoss(reduction = 'sum')
+def psnr_loss(output, target):
+    # peak_signal = torch.max(target)
+    error = mse(output, target)
+    loss = 10 * (torch.log(error)) #- torch.log(peak_signal))
+    return loss
+
+if __name__ == '__main__':
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    print(device)
+    args = parse_train_args('@train_args.txt')
+
+    if args.net_type == 'unet2d':
+        model = models.UNet2D(in_channels= args.in_channels, out_channels=args.out_channels, mid_channels= args.mid_channels, depth = args.depth, kernel_size= args.kernel_size, padding = args.padding, dilation= args.dilation, device = device, sig_layer = True)
+    elif args.net_type == 'unet1d':
+        model = models.UNet1D(in_channels= args.in_channels, out_channels=args.out_channels, mid_channels= args.mid_channels, depth = args.depth, kernel_size= args.kernel_size, padding = args.padding, dilation= args.dilation, device = device)
+    else:
+        print(args.net_type)
+        raise NotImplementedError
+
+
+    train_net = args.train_net
+    print('training set to ', train_net)
+    bce = nn.BCELoss(reduction = 'sum')
+    mse = nn.MSELoss(reduction= 'sum')
 
     train_bsz = args.train_batch_size
     data_dir_train = os.path.join('cloud_data', args.data_dir, 'train')
@@ -201,7 +227,7 @@ if __name__ == '__main__':
     target_torch = target_torch.unsqueeze(0)
     train_torch = train_torch.unsqueeze(0)
 
-    model = overfit_model(model, device, train_torch, target_torch, custom_loss_fcn1, scheduler, optimizer, num_epochs)
+    model = overfit_model(model, device, train_torch, target_torch, psnr_loss, scheduler, optimizer, num_epochs)
     print('finished overfitting')
     # model.cuda()
     # model_overfitted.eval()
@@ -213,11 +239,11 @@ if __name__ == '__main__':
     final_output = model(train_torch)
     
     print('output size: ', final_output.size())
-    print('l1 norm of output: ', torch.sum(final_output))
+    print('l1 norm of output: ', torch.sum(torch.abs(final_output)))
     output_np = final_output.cpu().detach().numpy()
-    output_np = output_np[0, 0, :, :]
-    target_np = target_torch.cpu().detach().numpy()
-    target_np = target_np[0, 0, :, :]
+    # output_np = output_np[0, 0, :, :]
+    # target_np = target_torch.cpu().detach().numpy()
+    # target_np = target_np[0, 0, :, :]
 
     # plt.figure()
     # plt.imshow(target_np)
