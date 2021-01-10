@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 import datagen
 from numpy.fft import fft, ifft
 
-def train_model(model, device, train_dataloader, val_dataloader, net_input_name, target_name, loss_fcn, scheduler, optimizer, num_train, num_val, num_epochs, writer):
+def train_model(model, device, train_dataloader, val_dataloader, net_input_name, target_name, loss_fcn, scheduler, optimizer, num_train, num_val, num_epochs, writer, print_every):
     
     model = model.to(device)
 
@@ -56,7 +56,7 @@ def train_model(model, device, train_dataloader, val_dataloader, net_input_name,
             # epoch_train_loss +=  loss.item()
             num_div += 1
 
-            if num_div % 50 == 0:
+            if num_div % print_every == 0:
                 print(num_div)
 
             if num_div >= num_train:
@@ -131,8 +131,8 @@ def parse_train_args(file_name = '@train_args.txt'):
     parser.add_argument('--train_net', type = bool, default = False)
     parser.add_argument('--num_train', type = int, default = 1000)
     parser.add_argument('--num_val', type = int, default = 100)
-    parser.add_argument('--data_dir', type = str, default = '')
-    # parser.add_argument('--data_dir_val', type = str, default = '')
+    parser.add_argument('--train_data_dir', type = str, default = '')
+    parser.add_argument('--val_data_dir', type = str, default = '')
     parser.add_argument('--net_input_name', type = str, default = '')
     parser.add_argument('--target_name', type = str, default = '')
     parser.add_argument('--learning_rate', type = float, default = 0.1)
@@ -146,6 +146,10 @@ def parse_train_args(file_name = '@train_args.txt'):
     parser.add_argument('--kernel_size', type = int, default=3)
     parser.add_argument('--dilation', type = int, default=2)
     parser.add_argument('--padding', type = int, default =2)
+    parser.add_argument('--print_every', type = int, default = 50)
+    parser.add_argument('--weight_decay', type = float, default = 0, help = 'l2 regularization on weights')
+    parser.add_argument('--scheduler_stepsize', type = int, default = 5)
+    parser.add_argument('--scheduler_gamma', type = float, default = 0.8)
     args = parser.parse_args([file_name])
     return args
 
@@ -201,12 +205,12 @@ if __name__ == '__main__':
     mse = nn.MSELoss(reduction= 'sum')
 
     train_bsz = args.train_batch_size
-    data_dir_train = os.path.join('cloud_data', args.data_dir, 'train')
+    data_dir_train = args.train_data_dir#os.path.join('cloud_data', args.data_dir, 'train')
     data_list_train = os.listdir(data_dir_train)
     train_dataset = mydata.PointDataSet(data_dir_train, data_list_train)
     train_dataloader = data.DataLoader(train_dataset, batch_size = train_bsz, shuffle= True, num_workers= 4)
 
-    data_dir_val = os.path.join('cloud_data', args.data_dir, 'val')
+    data_dir_val = args.val_data_dir#os.path.join('cloud_data', args.data_dir, 'val')
     data_list_val = os.listdir(data_dir_val)
     val_dataset = mydata.PointDataSet(data_dir_val, data_list_val)
     val_dataloader = data.DataLoader(val_dataset, batch_size = 1, shuffle= True, num_workers= 1)
@@ -214,34 +218,34 @@ if __name__ == '__main__':
     net_input_name = args.net_input_name
     target_name = args.target_name
 
-    optimizer = optim.Adam(model.parameters(), lr = 0.9, weight_decay= 0)
-    scheduler = lr_scheduler.StepLR(
-        optimizer, step_size= 50, gamma= 0.5)
+    # optimizer = optim.Adam(model.parameters(), lr = 0.9, weight_decay= 0)
+    # scheduler = lr_scheduler.StepLR(
+    #     optimizer, step_size= 50, gamma= 0.5)
 
-    num_epochs = 1000
+    # num_epochs = 1000
 
-    sample_idx = 0 #np.random.randint(len(os.listdir(data_dir_train)))
-    sample = train_dataset.__getitem__(sample_idx)
-    train_torch = sample[net_input_name]
-    target_torch = sample[target_name]
-    target_torch = target_torch.unsqueeze(0)
-    train_torch = train_torch.unsqueeze(0)
+    # sample_idx = 0 #np.random.randint(len(os.listdir(data_dir_train)))
+    # sample = train_dataset.__getitem__(sample_idx)
+    # train_torch = sample[net_input_name]
+    # target_torch = sample[target_name]
+    # target_torch = target_torch.unsqueeze(0)
+    # train_torch = train_torch.unsqueeze(0)
 
-    model = overfit_model(model, device, train_torch, target_torch, psnr_loss, scheduler, optimizer, num_epochs)
-    print('finished overfitting')
-    # model.cuda()
-    # model_overfitted.eval()
-    # train_torch.cuda()
-    train_torch = train_torch.to(device)
-    model.to(device)
-    # model_overfitted.to(device)
-    model.eval()
-    final_output = model(train_torch)
+    # model = overfit_model(model, device, train_torch, target_torch, psnr_loss, scheduler, optimizer, num_epochs)
+    # print('finished overfitting')
+    # # model.cuda()
+    # # model_overfitted.eval()
+    # # train_torch.cuda()
+    # train_torch = train_torch.to(device)
+    # model.to(device)
+    # # model_overfitted.to(device)
+    # model.eval()
+    # final_output = model(train_torch)
     
-    print('output size: ', final_output.size())
-    print('l1 norm of output: ', torch.sum(torch.abs(final_output)))
-    output_np = final_output.cpu().detach().numpy()
-    # output_np = output_np[0, 0, :, :]
+    # print('output size: ', final_output.size())
+    # print('l1 norm of output: ', torch.sum(torch.abs(final_output)))
+    # output_np = final_output.cpu().detach().numpy()
+    # # output_np = output_np[0, 0, :, :]
     # target_np = target_torch.cpu().detach().numpy()
     # target_np = target_np[0, 0, :, :]
 
@@ -261,13 +265,13 @@ if __name__ == '__main__':
     experiment_name = 'single_point_experiment2d'    
     writer = SummaryWriter(experiment_name)
     checkpoint_save_path = args.model_name#os.path.join('single_point_model2d.pt')
-    if train_net:
-        optimizer = optim.Adam(model.parameters(), lr = args.learning_rate, weight_decay= 0)
-        scheduler = lr_scheduler.StepLR(
-            optimizer, step_size= 5, gamma= 0.5)
-        num_epochs = args.num_train_epochs
+    # if train_net:
+    optimizer = optim.Adam(model.parameters(), lr = args.learning_rate, weight_decay= args.weight_decay)
+    scheduler = lr_scheduler.StepLR(
+        optimizer, step_size= args.scheduler_stepsize, gamma= args.scheduler_gamma)
+    num_epochs = args.num_train_epochs
 
-        model = train_model(model, device, train_dataloader, val_dataloader, net_input_name, target_name, custom_loss_fcn1, scheduler, optimizer, num_train, num_val, num_epochs, writer)
+    model = train_model(model, device, train_dataloader, val_dataloader, net_input_name, target_name, psnr_loss, scheduler, optimizer, num_train, num_val, num_epochs, writer, args.print_every)
 
     torch.save({'epoch': num_epochs, 
             'batchsize': train_bsz,
