@@ -1,9 +1,9 @@
 --train_batch_size
 4
 --num_train
-1000
---num_val
 100
+--num_val
+50
 --train_data_dir
 cloud_data/points/train
 --val_data_dir
