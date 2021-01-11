@@ -199,8 +199,8 @@ if __name__ == '__main__':
         raise NotImplementedError
 
 
-    train_net = args.train_net
-    print('training set to ', train_net)
+    # train_net = args.train_net
+    # print('training set to ', train_net)
     bce = nn.BCELoss(reduction = 'sum')
     mse = nn.MSELoss(reduction= 'sum')
 
@@ -282,4 +282,4 @@ if __name__ == '__main__':
             }, checkpoint_save_path)
 
 
-    print('model saved')
+    print('model saved: ', args.model_name)

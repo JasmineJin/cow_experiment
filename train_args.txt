@@ -1,9 +1,9 @@
 --train_batch_size
 4
 --num_train
-100
+5000
 --num_val
-50
+500
 --train_data_dir
 cloud_data/points/train
 --val_data_dir
@@ -17,7 +17,7 @@ full
 --num_train_epochs
 10
 --model_name
-single_point_model_psnr.pt
+single_point_model_psnr1.pt
 --net_type
 unet2d
 --in_channels
