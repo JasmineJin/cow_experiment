@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 import datagen
 from numpy.fft import fft, ifft
 
-def train_model(model, device, train_dataloader, val_dataloader, net_input_name, target_name, loss_fcn, scheduler, optimizer, num_train, num_val, num_epochs, writer, print_every):
+def train_model(model, device, train_dataloader, val_dataloader, net_input_name, target_name, loss_fcn, scheduler, optimizer, num_epochs, writer, print_every):
     
     model = model.to(device)
 
@@ -32,7 +32,7 @@ def train_model(model, device, train_dataloader, val_dataloader, net_input_name,
     best_model_wts = copy.deepcopy(model.state_dict())
     print('starting to train')
     for e in range(num_epochs):
-        print('training epoch ', e)
+        # print('training epoch ', e)
         epoch_train_loss = 0.
         num_div = 1
         model.train()
@@ -56,11 +56,9 @@ def train_model(model, device, train_dataloader, val_dataloader, net_input_name,
             # epoch_train_loss +=  loss.item()
             num_div += 1
 
-            if num_div % print_every == 0:
-                print(num_div)
+            # if num_div % print_every == 0:
+            #     print(num_div)
 
-            if num_div >= num_train:
-                break
 
         # if num_div > 0:
         #     epoch_train_loss = epoch_train_loss / num_div
@@ -71,10 +69,14 @@ def train_model(model, device, train_dataloader, val_dataloader, net_input_name,
         
         epoch_val_loss = 0.
         num_div = 1
-        
-        print('train loss for epoch ', e, epoch_train_loss)
+
+        if e % print_every == 0 or e < 10:
+            print('train loss for epoch ', e, epoch_train_loss)
+
         model.eval()
         for batch_idx, sample in enumerate(val_dataloader):
+            # if num_div > num_val:
+            #     break
             train_torch = sample[net_input_name]
             target_torch = sample[target_name]
             target_torch = target_torch.to(device)
@@ -86,16 +88,16 @@ def train_model(model, device, train_dataloader, val_dataloader, net_input_name,
             epoch_val_loss +=  (loss.item() - epoch_val_loss) / num_div
             num_div += 1
 
-            if num_div >= num_val:
-                break
+            # if num_div >= num_val:
+            #     break
 
         # if num_div > 0:
         #     epoch_val_loss = epoch_val_loss / num_div
         # else:
         #     epoch_val_loss = float('inf')
 
-        # if e % 10 == 0 or e < 10:
-        print('val loss for epoch ', e, epoch_val_loss)
+        if e % print_every == 0 or e < 10:
+            print('val loss for epoch ', e, epoch_val_loss)
         if epoch_val_loss <= lowest_loss:
             lowest_loss = epoch_val_loss
             best_model_wts = copy.deepcopy(model.state_dict())
@@ -128,7 +130,7 @@ def parse_train_args(file_name = '@train_args.txt'):
 
     parser = argparse.ArgumentParser(fromfile_prefix_chars='@')
     parser.add_argument('--train_batch_size', type = int, default = 4)
-    parser.add_argument('--train_net', type = bool, default = False)
+    # parser.add_argument('--train_net', type = bool, default = False)
     parser.add_argument('--num_train', type = int, default = 1000)
     parser.add_argument('--num_val', type = int, default = 100)
     parser.add_argument('--train_data_dir', type = str, default = '')
@@ -188,8 +190,8 @@ def psnr_loss(output, target):
 if __name__ == '__main__':
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     print(device)
-    args = parse_train_args('@train_args.txt')
-
+    args = parse_train_args('@train_polar_args.txt')
+    print(args)
     if args.net_type == 'unet2d':
         model = models.UNet2D(in_channels= args.in_channels, out_channels=args.out_channels, mid_channels= args.mid_channels, depth = args.depth, kernel_size= args.kernel_size, padding = args.padding, dilation= args.dilation, device = device, sig_layer = True)
     elif args.net_type == 'unet1d':
@@ -207,12 +209,12 @@ if __name__ == '__main__':
     train_bsz = args.train_batch_size
     data_dir_train = args.train_data_dir#os.path.join('cloud_data', args.data_dir, 'train')
     data_list_train = os.listdir(data_dir_train)
-    train_dataset = mydata.PointDataSet(data_dir_train, data_list_train)
-    train_dataloader = data.DataLoader(train_dataset, batch_size = train_bsz, shuffle= True, num_workers= 4)
+    train_dataset = mydata.PointDataSet(data_dir_train, data_list_train[0: args.num_train])
+    train_dataloader = data.DataLoader(train_dataset, batch_size = train_bsz, shuffle= True, num_workers= min(train_bsz, 4))
 
     data_dir_val = args.val_data_dir#os.path.join('cloud_data', args.data_dir, 'val')
     data_list_val = os.listdir(data_dir_val)
-    val_dataset = mydata.PointDataSet(data_dir_val, data_list_val)
+    val_dataset = mydata.PointDataSet(data_dir_val, data_list_val[0: args.num_val])
     val_dataloader = data.DataLoader(val_dataset, batch_size = 1, shuffle= True, num_workers= 1)
 
     net_input_name = args.net_input_name
@@ -259,8 +261,8 @@ if __name__ == '__main__':
 
     # plt.show()
     
-    num_train = args.num_train
-    num_val = args.num_val
+    # num_train = args.num_train
+    # num_val = args.num_val
 
     experiment_name = 'single_point_experiment2d'    
     writer = SummaryWriter(experiment_name)
@@ -271,7 +273,7 @@ if __name__ == '__main__':
         optimizer, step_size= args.scheduler_stepsize, gamma= args.scheduler_gamma)
     num_epochs = args.num_train_epochs
 
-    model = train_model(model, device, train_dataloader, val_dataloader, net_input_name, target_name, psnr_loss, scheduler, optimizer, num_train, num_val, num_epochs, writer, args.print_every)
+    model = train_model(model, device, train_dataloader, val_dataloader, net_input_name, target_name, psnr_loss, scheduler, optimizer, num_epochs, writer, args.print_every)
 
     torch.save({'epoch': num_epochs, 
             'batchsize': train_bsz,

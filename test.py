@@ -15,13 +15,13 @@ import train
 
 print('finished importing stuff')
 
-args = train.parse_train_args('@train_args.txt')
+args = train.parse_train_args('@train_polar_args.txt')
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print(device)
 
 data_dir = os.path.join('cloud_data', 'points', 'train')
-model_path = 'single_point_model_psnr.pt'
+model_path = 'single_point_model_psnr_polar_overfit.pt'
 # model_path = os.path.join('models_trained', 'point_model2d_final.pt')
 model_info = torch.load(model_path, map_location=device)
 model_weights = model_info['model_state_dict']
