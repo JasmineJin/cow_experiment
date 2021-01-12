@@ -34,3 +34,11 @@ unet2d
 2
 --padding
 2
+--print_every
+1
+--weight_decay
+0
+--scheduler_stepsize
+5
+--scheduler_gamma
+0.5
