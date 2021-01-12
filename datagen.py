@@ -11,7 +11,7 @@ import image_transformation_utils as trans
 # global constants
 num_range_bins = 256
 num_channels = 512
-wl=0.299792458 / 77
+wl= (299.792458 / 77) * 0.001
 num_samples = 16
 center_freq = 77 * 10 ** 9
 speed_of_light = 299792458
@@ -178,9 +178,9 @@ def get_radar_image_pairs(radar_response):
                 'mag_partial1': normal_plot_partial1, 
                 'real_partial1': normal_plot_partial1_real,
                 'imag_partial1': normal_plot_partial1_imag,
-                'polar_full': np.abs(radar_ra_plot_thresholded),
-                'polar_partial0': np.abs(radar_ra_plot_partial0_thresholded),
-                'polar_partial1': np.abs(radar_ra_plot_partial1_thresholded)}
+                'polar_full': radar_ra_plot_thresholded,
+                'polar_partial0': radar_ra_plot_partial0_thresholded,
+                'polar_partial1': radar_ra_plot_partial1_thresholded}
     
     return output
 

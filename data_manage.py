@@ -6,6 +6,7 @@ import os
 import torch.utils.data as data
 import matplotlib.pyplot as plt 
 import datagen
+import image_transformation_utils as trans 
 
 class PointDataSet(data.Dataset):
     def __init__(self, data_dir, data_list):
@@ -46,9 +47,10 @@ class PointDataSet(data.Dataset):
         mydata['log_partial'] = partial_torch
 
         polar_full_np = processed['polar_full']
+        polar_full_np = np.hstack([polar_full_np.real, polar_full_np.imag])
         polar_partial0_np = processed['polar_partial0']
         polar_partial1_np = processed['polar_partial1']
-        polar_partial_np = np.hstack([polar_partial0_np, polar_partial1_np])
+        polar_partial_np = np.hstack([polar_partial0_np.real, polar_partial0_np.imag, polar_partial1_np.real, polar_partial1_np.imag])
 
         polar_full_torch = torch.from_numpy(polar_full_np).type(torch.float)
         polar_partial_torch = torch.from_numpy(polar_partial_np).type(torch.float)
@@ -76,7 +78,6 @@ class PointDataSet(data.Dataset):
         mydata['partial'] = partial_torch
 
         return mydata
-
 
 class Point1DDataSet(data.Dataset):
     def __init__(self, data_dir, data_list):
@@ -117,6 +118,17 @@ def display_data(target, output, net_input, target_name, net_input_name):
         target_imag = target[0, 1, :, :]
         target_mag = np.abs(target_real + 1j * target_imag) + 10 **(-12)
         target_np = 20 * np.log(target_mag)
+    elif target_name == 'polar_full':
+        # print('output shape:', output.shape)
+        output_real = output[0, :, 0: output.shape[2]// 2]
+        output_imag = output[0, :, output.shape[2]//2 : output.shape[2]]
+        output_mag = np.abs(output_real + 1j * output_imag) + 10 ** (-12)
+        output_np = 20 * np.log(output_mag)
+        # print('output_imag shape: ', output_imag.shape)
+        target_real = target[0, :, 0: target.shape[2]// 2]
+        target_imag = target[0, :, target.shape[2]//2 : target.shape[2]]
+        target_mag = np.abs(target_real + 1j * target_imag) + 10 ** (-12)
+        target_np = 20 * np.log(target_mag)
     else:
         raise NotImplementedError
     
@@ -130,6 +142,17 @@ def display_data(target, output, net_input, target_name, net_input_name):
         input0 = 20 * np.log(mag0)
         real1 = net_input[0, 2, :, :]
         imag1 = net_input[0, 3, :, :]
+        mag1 = np.abs(real1 + 1j * imag1) + 10 **(-12)
+        input1 = 20 * np.log(mag1)
+    elif net_input_name == 'polar_partial':
+        net_input0 = net_input[0, :, 0: net_input.shape[2]//2]
+        net_input1 = net_input[0, :, net_input.shape[2]//2 : net_input.shape[2]]
+        real0 = net_input0[:, 0: net_input0.shape[1]//2]
+        imag0 = net_input0[:, net_input0.shape[1]// 2 : net_input0.shape[1]]
+        mag0 = np.abs(real0 + 1j * imag0) + 10 ** (-12)
+        input0 = 20 * np.log(mag0)
+        real1 = net_input1[:, 0: net_input1.shape[1]//2]
+        imag1 = net_input1[:, net_input1.shape[1]// 2 : net_input1.shape[1]]
         mag1 = np.abs(real1 + 1j * imag1) + 10 **(-12)
         input1 = 20 * np.log(mag1)
     else:
@@ -181,17 +204,18 @@ if __name__ == '__main__':
 
     mydataset = PointDataSet(data_dir, data_list)
     mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= True, num_workers= 4)
-    
+    net_input_name = 'polar_partial'
+    target_name = 'polar_full'
     for batch_idx, sample in enumerate(mydataloader):
         for name in sample:
             print(name)
             thing = sample[name]
             print(thing.size())
 
-        target = sample['full']
-        net_input = sample['partial']
+        target = sample[target_name]
+        net_input = sample[net_input_name]
         print(sample['x_points'])
         print(sample['y_points'])
-        display_data(target, target, net_input, 'full', 'partial')
+        display_data(target, target, net_input, target_name, net_input_name)
 
         break
