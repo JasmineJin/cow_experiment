@@ -44,7 +44,7 @@ print('made model')
 
 # print('defined loss function')
 
-mydataset = mydata.PointDataSet(data_dir, os.listdir(data_dir))
+mydataset = mydata.PointDataSet(data_dir, os.listdir(data_dir), args.net_input_name, args.target_name)
 mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= True, num_workers= 1)
 print('created dataloader')
 

@@ -23,6 +23,7 @@ class PointDataSet(data.Dataset):
             idx = idx.to_list()
         mydata = {}
         filepath = os.path.join(self.data_dir, self.data_list[idx])
+        mydata['file_path'] = filepath
         npzfile = np.load(filepath)
         x_points = npzfile['all_point_x']
         # print(x_points)
@@ -184,20 +185,39 @@ if __name__ == '__main__':
     data_list = os.listdir(data_dir)
     # data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)
 
-    show_figs = False
+    show_figs = True
+    nums_examine = 5
+    nums_examined = 0
+
+    mse = nn.MSELoss(reduction = 'sum')
 
     mydataset = PointDataSet(data_dir, data_list, net_input_name, target_name)
-    mydataloader = data.DataLoader(mydataset, batch_size = 10, shuffle= True, num_workers= 4)
+    mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= False, num_workers= 4)
     
     for batch_idx, sample in enumerate(mydataloader):
         for name in sample:
             print(name)
             thing = sample[name]
-            print(thing.size())
+            if name == net_input_name or name == target_name:
+                print('size: ', thing.size())
+                print('minimum value: ', torch.min(thing))
+                print('maximum value: ', torch.max(thing))
+                print('average value: ', torch.mean(thing))
+                print('variance: ', torch.var(thing))
+                zero_tensor = torch.zeros(thing.size())
+                # print('0:', torch.sum(zero_tensor))
+                mynorm = mse(thing, zero_tensor)
+                print('sum abs squared: ', mynorm.item())
+            else:
+                print(thing)
+        nums_examined += 1
+        print(nums_examined)
         if show_figs:
             target = sample[target_name]
             net_input = sample[net_input_name]
             # print(sample['x_points'])
             # print(sample['y_points'])
             display_data(target, target, net_input, target_name, net_input_name)
-        break
+        
+        if nums_examined >= nums_examine:
+            break
