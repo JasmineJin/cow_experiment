@@ -9,9 +9,11 @@ import datagen
 import image_transformation_utils as trans 
 
 class PointDataSet(data.Dataset):
-    def __init__(self, data_dir, data_list):
+    def __init__(self, data_dir, data_list, net_input_name = 'partial', target_name = 'full'):
         self.data_dir = data_dir
         self.data_list = data_list
+        self.net_input_name = net_input_name
+        self.target_name = target_name
     def __len__(self):
         
         return len(self.data_list)
@@ -31,52 +33,53 @@ class PointDataSet(data.Dataset):
 
         processed = datagen.get_radar_image_pairs(raw_data)
 
-        target_np = 20 * np.log10(processed['mag_full'] + 10 **(-12))
-        partial0_np = processed['mag_partial0']
-        partial1_np = processed['mag_partial1']
+        if self.net_input_name == 'log_partial':
+            partial0_np = processed['mag_partial0']
+            partial1_np = processed['mag_partial1']
+            partial_np = np.dstack((partial0_np, partial1_np))
+            partial_np = 20 * np.log10(partial_np + 10 ** (-12))
+            partial_np = partial_np.transpose(2, 0, 1)
+            partial_torch = torch.from_numpy(partial_np).type(torch.float)
+            mydata['log_partial'] = partial_torch
         
+        elif self.net_input_name == 'polar_partial':
+            polar_partial0_np = processed['polar_partial0']
+            polar_partial1_np = processed['polar_partial1']
+            polar_partial_np = np.hstack([polar_partial0_np.real, polar_partial0_np.imag, polar_partial1_np.real, polar_partial1_np.imag])
+            polar_partial_torch = torch.from_numpy(polar_partial_np).type(torch.float)
+            mydata['polar_partial'] = polar_partial_torch
+        elif self.net_input_name == 'partial':
+            real_partial0_np = processed['real_partial0']
+            imag_partial0_np = processed['imag_partial0']
+            real_partial1_np = processed['real_partial1']
+            imag_partial1_np = processed['imag_partial1']
+            partial_np = np.dstack((real_partial0_np, imag_partial0_np, real_partial1_np, imag_partial1_np))
+            partial_np = partial_np.transpose(2, 0, 1)         
+            partial_torch = torch.from_numpy(partial_np).type(torch.float)
+            mydata['partial'] = partial_torch
+        else:
+            raise NotImplementedError
 
-        target_np = target_np[np.newaxis, :, :]
-        target_torch = torch.from_numpy(target_np).type(torch.float)
-        mydata['log_full'] = target_torch
+        if self.target_name == 'log_full':
+            target_np = 20 * np.log10(processed['mag_full'] + 10 **(-12))
+            target_np = target_np[np.newaxis, :, :]
+            target_torch = torch.from_numpy(target_np).type(torch.float)
+            mydata[self.target_name] = target_torch
+        elif self.target_name == 'polar_full':
+            polar_full_np = processed['polar_full']
+            polar_full_np = np.hstack([polar_full_np.real, polar_full_np.imag])
+            polar_full_torch = torch.from_numpy(polar_full_np).type(torch.float)
+            mydata[self.target_name] = polar_full_torch
+        elif self.target_name == 'full':
+            real_full_np = processed['real_full']
+            imag_full_np = processed['imag_full']
+            full_np = np.dstack((real_full_np, imag_full_np))
+            full_np = full_np.transpose(2, 0, 1)
+            full_torch = torch.from_numpy(full_np).type(torch.float)
+            mydata[self.target_name] = full_torch
+        else:
+            raise NotImplementedError
         
-        partial_np = np.dstack((partial0_np, partial1_np))
-        partial_np = 20 * np.log10(partial_np + 10 ** (-12))
-        partial_np = partial_np.transpose(2, 0, 1)
-        partial_torch = torch.from_numpy(partial_np).type(torch.float)
-        mydata['log_partial'] = partial_torch
-
-        polar_full_np = processed['polar_full']
-        polar_full_np = np.hstack([polar_full_np.real, polar_full_np.imag])
-        polar_partial0_np = processed['polar_partial0']
-        polar_partial1_np = processed['polar_partial1']
-        polar_partial_np = np.hstack([polar_partial0_np.real, polar_partial0_np.imag, polar_partial1_np.real, polar_partial1_np.imag])
-
-        polar_full_torch = torch.from_numpy(polar_full_np).type(torch.float)
-        polar_partial_torch = torch.from_numpy(polar_partial_np).type(torch.float)
-        # all_data = np.dstack((target_np, partial0_np, partial1_np))
-        mydata['polar_full'] = polar_full_torch
-        mydata['polar_partial'] = polar_partial_torch
-
-        real_full_np = processed['real_full']
-        imag_full_np = processed['imag_full']
-
-        real_partial0_np = processed['real_partial0']
-        imag_partial0_np = processed['imag_partial0']
-
-        real_partial1_np = processed['real_partial1']
-        imag_partial1_np = processed['imag_partial1']
-
-        full_np = np.dstack((real_full_np, imag_full_np))
-        full_np = full_np.transpose(2, 0, 1)
-        partial_np = np.dstack((real_partial0_np, imag_partial0_np, real_partial1_np, imag_partial1_np))
-        partial_np = partial_np.transpose(2, 0, 1)
-
-        full_torch = torch.from_numpy(full_np).type(torch.float)
-        partial_torch = torch.from_numpy(partial_np).type(torch.float)
-        mydata['full'] = full_torch
-        mydata['partial'] = partial_torch
-
         return mydata
 
 class Point1DDataSet(data.Dataset):
@@ -176,46 +179,25 @@ def display_data(target, output, net_input, target_name, net_input_name):
 if __name__ == '__main__':
     # import matplotlib.pyplot as plt
     data_dir = os.path.join('cloud_data', 'points', 'train')
-
-    data_list = os.listdir(data_dir)
-    data_path = os.path.join(data_dir, data_list[0])
-    # print(data_path)
-    # data_info = np.load(data_path)
-    # x_points = data_info['all_point_x']
-    # print(x_points)
-    # y_points = data_info['all_point_y']
-    # print(y_points)
-
-    # raw_data = datagen.get_scene_raw_data(x_points, y_points)
-    
-    # processed_data = datagen.get_radar_image_pairs(raw_data)
-
-    # target_np = processed_data['polar_full']
-    # partial0_np = processed_data['polar_partial0']
-
-    # plt.figure()
-    # plt.imshow(target_np)
-    # plt.title('target')
-    # plt.figure()
-    # plt.imshow(partial0_np)
-    # plt.title('partial0')
-
-    # plt.show()
-
-    mydataset = PointDataSet(data_dir, data_list)
-    mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= True, num_workers= 4)
     net_input_name = 'polar_partial'
     target_name = 'polar_full'
+    data_list = os.listdir(data_dir)
+    # data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)
+
+    show_figs = False
+
+    mydataset = PointDataSet(data_dir, data_list, net_input_name, target_name)
+    mydataloader = data.DataLoader(mydataset, batch_size = 10, shuffle= True, num_workers= 4)
+    
     for batch_idx, sample in enumerate(mydataloader):
         for name in sample:
             print(name)
             thing = sample[name]
             print(thing.size())
-
-        target = sample[target_name]
-        net_input = sample[net_input_name]
-        print(sample['x_points'])
-        print(sample['y_points'])
-        display_data(target, target, net_input, target_name, net_input_name)
-
+        if show_figs:
+            target = sample[target_name]
+            net_input = sample[net_input_name]
+            # print(sample['x_points'])
+            # print(sample['y_points'])
+            display_data(target, target, net_input, target_name, net_input_name)
         break
