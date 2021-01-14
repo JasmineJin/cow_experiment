@@ -179,9 +179,9 @@ def display_data(target, output, net_input, target_name, net_input_name):
 
 if __name__ == '__main__':
     # import matplotlib.pyplot as plt
-    data_dir = os.path.join('cloud_data', 'points', 'train')
-    net_input_name = 'polar_partial'
-    target_name = 'polar_full'
+    data_dir = os.path.join('../cloud_data', 'points', 'train')
+    net_input_name = 'partial'
+    target_name = 'full'
     data_list = os.listdir(data_dir)
     # data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)
 

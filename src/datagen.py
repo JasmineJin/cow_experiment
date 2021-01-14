@@ -184,48 +184,6 @@ def get_radar_image_pairs(radar_response):
     
     return output
 
-    # plt.figure()
-    # plt.imshow(np.abs(radar_ra_plot), extent = [-1, 1, 0, max_rng], aspect = 'auto', origin= 'lower')
-    # plt.xlabel('cos(angle)')
-    # plt.ylabel('range (m)')
-    # plt.title('range angle plot full array')
-
-    
-
-    # plt.figure()
-    # plt.imshow(normal_plot, extent = [x[0], x[-1], y[0], y[-1]], origin= 'lower')
-    # plt.xlabel('x (m)')
-    # plt.ylabel('y (m)')
-    # plt.title('full array image')
-
-    # plt.figure()
-    # plt.imshow(np.abs(radar_ra_plot_partial0), extent = [-1, 1, 0, max_rng], aspect = 'auto', origin= 'lower')
-    # plt.xlabel('cos(angle)')
-    # plt.ylabel('range (m)')
-    # plt.title('range angle plot first 16 antennas')
-
-
-    # plt.figure()
-    # plt.imshow(normal_plot_partial0, extent = [x[0], x[-1], y[0], y[-1]], origin= 'lower')
-    # plt.xlabel('x (m)')
-    # plt.ylabel('y (m)')
-    # plt.title('first 16 antennas image')
-
-    # plt.figure()
-    # plt.imshow(range_angle_label, extent = [-1, 1, 0, max_rng], aspect = 'auto', origin= 'lower')
-    # plt.xlabel('cos(angle)')
-    # plt.ylabel('range (m)')
-    # plt.title('range angle locations for points')
-
-
-    # plt.figure()
-    # plt.imshow(normal_plot_label, extent = [x[0], x[-1], y[0], y[-1]], origin= 'lower')
-    # plt.xlabel('x (m)')
-    # plt.ylabel('y (m)')
-    # plt.title('xy locations for points')
-
-    # plt.show()
-
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import argparse

@@ -23,9 +23,7 @@ class Pixel(object):
         self.num_values += 1
     
     def get_pix_value(self):
-        if self.num_values == 0:
-            return 0
-        value = self.value / self.num_values
+        value = self.value #/ self.num_values
         return value
     
     def get_x(self):
