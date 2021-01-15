@@ -15,7 +15,7 @@ import train
 
 print('finished importing stuff')
 
-args = train.parse_train_args('@train_polar_args.txt')
+args = train.parse_train_args('@../train_polar_args.txt')
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print(device)
