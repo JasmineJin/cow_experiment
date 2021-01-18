@@ -1,6 +1,6 @@
 import numpy as np
 # import matplotlib
-
+import train
 import numpy as np
 import scipy as sp
 from numpy.fft import fft, ifft, fftshift, ifftshift

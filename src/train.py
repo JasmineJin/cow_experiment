@@ -153,6 +153,7 @@ def parse_train_args(file_name = '@train_args.txt'):
     parser.add_argument('--scheduler_stepsize', type = int, default = 5)
     parser.add_argument('--scheduler_gamma', type = float, default = 0.8)
     args = parser.parse_args([file_name])
+
     return args
 
 def custom_loss_fcn(output, target):
@@ -188,14 +189,33 @@ def psnr_loss(output, target):
     return loss
 
 if __name__ == '__main__':
+    ##########################################################################
+    # check device
+    ##########################################################################
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     print(device)
-    args = parse_train_args('@train_polar_args.txt')
-    print(args)
+    ##########################################################################
+    # parse arguments from file
+    ##########################################################################
+    parser1 = argparse.ArgumentParser()
+    parser1.add_argument('--arg_file', help = 'arg file')
+    args1 = parser1.parse_args()
+    arg_file_path = os.path.join('train_args', args1.arg_file + '.json')
+
+    t_args = argparse.Namespace()
+    t_args.__dict__.update(json.load(open(arg_file_path)))
+    args = parser1.parse_args(namespace=t_args)
+    print(vars(args))
+    # print(args)
+    ##########################################################################
+    # set up model
+    ##########################################################################
     if args.net_type == 'unet2d':
-        model = models.UNet2D(in_channels= args.in_channels, out_channels=args.out_channels, mid_channels= args.mid_channels, depth = args.depth, kernel_size= args.kernel_size, padding = args.padding, dilation= args.dilation, device = device, sig_layer = True)
+        model = models.UnetGenerator(input_nc = args.in_channels, output_nc = args.out_channels, num_downs = args.depth)
+        # model = models.UNet2D(in_channels= args.in_channels, out_channels=args.out_channels, mid_channels= args.mid_channels, depth = args.depth, kernel_size= args.kernel_size, padding = args.padding, dilation= args.dilation, device = device, sig_layer = True)
     elif args.net_type == 'unet1d':
-        model = models.UNet1D(in_channels= args.in_channels, out_channels=args.out_channels, mid_channels= args.mid_channels, depth = args.depth, kernel_size= args.kernel_size, padding = args.padding, dilation= args.dilation, device = device)
+        model = models.UnetGenerator1D(input_nc = args.in_channels, output_nc = args.out_channels, num_downs = args.depth)
+        # model = models.UNet1D(in_channels= args.in_channels, out_channels=args.out_channels, mid_channels= args.mid_channels, depth = args.depth, kernel_size= args.kernel_size, padding = args.padding, dilation= args.dilation, device = device)
     else:
         print(args.net_type)
         raise NotImplementedError
@@ -229,7 +249,7 @@ if __name__ == '__main__':
         optimizer, step_size= args.scheduler_stepsize, gamma= args.scheduler_gamma)
     num_epochs = args.num_train_epochs
 
-    model = train_model(model, device, train_dataloader, val_dataloader, net_input_name, target_name, psnr_loss, scheduler, optimizer, num_epochs, writer, args.print_every)
+    # model = train_model(model, device, train_dataloader, val_dataloader, net_input_name, target_name, psnr_loss, scheduler, optimizer, num_epochs, writer, args.print_every)
 
     torch.save({'epoch': num_epochs, 
             'batchsize': train_bsz,
