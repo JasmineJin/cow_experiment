@@ -20,10 +20,12 @@
     "print_every":     1,
     "check_every": 1,
     "use_bias": false, 
-    "log_every": 10,
+    "log_every": 1,
     "refresh_every": 100, 
     "weight_decay":     0,
     "scheduler_stepsize":     10,
     "scheduler_gamma":     1,
-    "reduction": "sum"
+    "reduction": "sum",
+    "show_image": false,
+    "shuffle_data": true
 }

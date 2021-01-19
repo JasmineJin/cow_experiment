@@ -109,7 +109,7 @@ if __name__ == '__main__':
     print('taking training data from directory:', data_dir_train)
     data_list_train = os.listdir(data_dir_train)
     train_dataset = mydata.PointDataSet(data_dir_train, data_list_train[0: args.num_train], net_input_name, target_name)
-    train_dataloader = data.DataLoader(train_dataset, batch_size = 1, shuffle= False, num_workers= 1)
+    train_dataloader = data.DataLoader(train_dataset, batch_size = 1, shuffle= args.shuffle_data, num_workers= 1)
 
     if len(args.val_data_dir) == 0:
         val_dataloader = train_dataloader
@@ -119,7 +119,7 @@ if __name__ == '__main__':
         print('taking validation data from directory:', data_dir_val)
         data_list_val = os.listdir(data_dir_val)
         val_dataset = mydata.PointDataSet(data_dir_val, data_list_val[0: args.num_val], args.net_input_name, args.target_name)
-        val_dataloader = data.DataLoader(val_dataset, batch_size = 1, shuffle= False, num_workers= 1)
+        val_dataloader = data.DataLoader(val_dataset, batch_size = 1, shuffle= args.shuffle_data, num_workers= 1)
 
     ##########################################################################
     # set up optimizer
@@ -206,11 +206,12 @@ if __name__ == '__main__':
 
         # log data into writer 
         if e % log_every == 0:
-        #     img_grid = mydata.get_output_target_image_grid(myoutput, target, target_name)
-        #     writer.add_image('output and target pair after epoch ' + str(e), img_grid)
-        #     writer.add_scalar('validation loss', val_loss, e)
-        #     writer.add_scalar('training loss', train_loss, e)
-            mydata.display_data(target, myoutput, net_input, target_name, net_input_name)
+            img_grid = mydata.get_output_target_image_grid(myoutput, target, target_name)
+            writer.add_image('output and target pair after epoch ' + str(e), img_grid)
+            writer.add_scalar('validation loss', val_loss, e)
+            writer.add_scalar('training loss', train_loss, e)
+            if args.show_image:
+                mydata.display_data(target, myoutput, net_input, target_name, net_input_name)
 
         # print stuff
         if e % print_every == 0:
