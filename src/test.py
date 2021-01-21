@@ -1,24 +1,30 @@
-import numpy as np
-import matplotlib.pyplot as plt
+import numpy as np 
+import torch
+import json
 import copy
-import os
-
 import torch 
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.utils.data as data
+import numpy as np
+
 import torch.optim as optim
+import os
+import argparse
+from torch.optim import lr_scheduler
+import torch.utils.data as data
 
 import models
 import data_manage as mydata
-import train
+
+import matplotlib.pyplot as plt
+from torchsummary import summary
+from torch.utils.tensorboard import SummaryWriter
+
+import matplotlib.pyplot as plt
+import datagen
+from numpy.fft import fft, ifft
 
 print('finished importing stuff')
-
-args = train.parse_train_args('@../train_polar_args.txt')
-
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-print(device)
 
 data_dir = os.path.join('cloud_data', 'points', 'train')
 model_path = 'single_point_model_psnr_polar_overfit.pt'
@@ -40,9 +46,6 @@ model.load_state_dict(model_weights)
 model.to(device)
 model.eval()
 print('made model')
-
-
-# print('defined loss function')
 
 mydataset = mydata.PointDataSet(data_dir, os.listdir(data_dir), args.net_input_name, args.target_name)
 mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= True, num_workers= 1)

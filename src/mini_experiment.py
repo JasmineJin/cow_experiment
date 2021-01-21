@@ -80,6 +80,8 @@ if __name__ == '__main__':
     elif args.net_type == 'unet1d':
         model = models.UnetGenerator1D(input_nc = args.in_channels, output_nc = args.out_channels, num_downs = args.depth, ngf = args.mid_channels, use_bias = args.use_bias)
         # model = models.UNet1D(in_channels= args.in_channels, out_channels=args.out_channels, mid_channels= args.mid_channels, depth = args.depth, kernel_size= args.kernel_size, padding = args.padding, dilation= args.dilation, device = device)
+    elif args.net_type == 'unetvh':
+        model = models.UnetGeneratorVH(input_nc = args.in_channels, output_nc = args.out_channels, num_downs = args.depth, ngf = args.mid_channels, use_bias = args.use_bias)
     else:
         print(args.net_type)
         raise NotImplementedError
@@ -89,7 +91,7 @@ if __name__ == '__main__':
     print(model)
 
     #########################################################################
-    # define loss function
+    # define loss function #TODO add option for l1 loss
     #########################################################################
     if args.loss_type == 'mse':
         myloss = nn.MSELoss(reduction = args.reduction)
@@ -97,6 +99,12 @@ if __name__ == '__main__':
         mse = nn.MSELoss(reduction = args.reduction)
         def myloss(output, target):
             return torch.log(mse(output, target))
+    elif args.loss_type == 'log_ratio':
+        def myloss(output, target):
+            return torch.sum(torch.abs(torch.log(target / output)))
+    elif args.loss_type == 'l1':
+        def myloss(output, target):
+            return torch.mean(torch.abs(output - target))
     else:
         raise NotImplementedError('loss function not implemented')
     
@@ -206,8 +214,8 @@ if __name__ == '__main__':
 
         # log data into writer 
         if e % log_every == 0:
-            img_grid = mydata.get_output_target_image_grid(myoutput, target, target_name)
-            writer.add_image('output and target pair after epoch ' + str(e), img_grid)
+            # img_grid = mydata.get_output_target_image_grid(myoutput, target, target_name)
+            # writer.add_image('output and target pair after epoch ' + str(e), img_grid)
             writer.add_scalar('validation loss', val_loss, e)
             writer.add_scalar('training loss', train_loss, e)
             if args.show_image:

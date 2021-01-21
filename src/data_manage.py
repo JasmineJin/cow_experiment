@@ -9,6 +9,7 @@ import datagen
 import image_transformation_utils as trans 
 import torchvision
 import torchvision.transforms as transforms
+from PIL import Image
 
 class PointDataSet(data.Dataset):
     def __init__(self, data_dir, data_list, net_input_name = 'partial', target_name = 'full'):
@@ -53,6 +54,17 @@ class PointDataSet(data.Dataset):
             polar_partial_np = np.block([[polar_partial0_np.real, polar_partial0_np.imag], [polar_partial1_np.real, polar_partial1_np.imag]])
             polar_partial_torch = torch.from_numpy(polar_partial_np).type(torch.float)
             mydata['polar_partial'] = polar_partial_torch
+
+        elif self.net_input_name == 'polar_partial2d':
+            polar_partial0_np = processed['polar_partial0']
+            polar_partial1_np = processed['polar_partial1']
+            # polar_partial_np0 = np.hstack([polar_partial0_np.real, polar_partial0_np.imag])
+            # polar_partial_np1 = np.hstack([polar_partial1_np.real, polar_partial1_np.imag])
+            polar_partial_np = np.dstack([polar_partial0_np.real, polar_partial0_np.imag, polar_partial1_np.real, polar_partial1_np.imag])
+            polar_partial_np = polar_partial_np.transpose(2, 0, 1)
+            polar_partial_torch = torch.from_numpy(polar_partial_np).type(torch.float)
+            mydata['polar_partial2d'] = polar_partial_torch
+
         elif self.net_input_name == 'partial':
             real_partial0_np = processed['real_partial0']
             imag_partial0_np = processed['imag_partial0']
@@ -75,6 +87,12 @@ class PointDataSet(data.Dataset):
             polar_full_np = np.hstack([polar_full_np.real, polar_full_np.imag])
             polar_full_torch = torch.from_numpy(polar_full_np).type(torch.float)
             mydata[self.target_name] = polar_full_torch
+        elif self.target_name == 'polar_full2d':
+            polar_full_np = processed['polar_full']
+            polar_full_np = np.dstack([polar_full_np.real, polar_full_np.imag])
+            polar_full_np = polar_full_np.transpose(2, 0, 1)
+            polar_full_torch = torch.from_numpy(polar_full_np).type(torch.float)
+            mydata[self.target_name] = polar_full_torch
         elif self.target_name == 'full':
             real_full_np = processed['real_full']
             imag_full_np = processed['imag_full']
@@ -87,6 +105,8 @@ class PointDataSet(data.Dataset):
         
         return mydata
 
+# class ImageDataSet(data.Dataset):
+#     pass
 
 def display_data(target, output, net_input, target_name, net_input_name):
     target = target.cpu().detach()
@@ -95,7 +115,7 @@ def display_data(target, output, net_input, target_name, net_input_name):
     if target_name == 'log_full':
         output_np = output[0, 0, :, :]
         target_np = target[0, 0, :, :]
-    elif target_name == 'full':
+    elif target_name == 'full' or 'polar_full2d':
         output_real = output[0, 0, :, :]
         output_imag = output[0, 1, :, :]
         output_mag = np.abs(output_real + 1j * output_imag) + 10 ** (-12)
@@ -121,7 +141,7 @@ def display_data(target, output, net_input, target_name, net_input_name):
     if net_input_name == 'log_partial':
         input0 = net_input[0, 0, :, :]
         input1 = net_input[0, 1, :, :]
-    elif net_input_name == 'partial':
+    elif net_input_name == 'partial' or 'polar_partial2d':
         real0 = net_input[0, 0, :, :]
         imag0 = net_input[0, 1, :, :]
         mag0 = np.abs(real0 + 1j * imag0) + 10 ** (-12)
@@ -211,7 +231,7 @@ def get_output_target_image_grid(output, target, target_name):
         target_imag = target[0, 1, :, :]
         target_mag = np.abs(target_real + 1j * target_imag) + 10 **(-12)
         target_np = 20 * np.log(target_mag)
-    elif target_name == 'polar_full':
+    elif target_name == 'polar_full' or target_name == 'polar_full2d':
         # print('output shape:', output.shape)
         output_real = output[0, :, 0: output.shape[2]// 2]
         output_imag = output[0, :, output.shape[2]//2 : output.shape[2]]
