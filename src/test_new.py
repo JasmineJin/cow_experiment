@@ -29,7 +29,7 @@ if __name__ == '__main__':
     device = torch.device('cpu')
     data_dir = os.path.join('..\cloud_data', 'points', 'train')
     data_list = os.listdir(data_dir)
-    model_path = 'single_point_unetvh_small.pt'
+    model_path = 'single_point_log_q1_mini.pt'
     # model_path = os.path.join('models_trained', 'point_model2d_final.pt')
     model = torch.load(model_path, map_location=device)
     model.to(device)
@@ -38,9 +38,9 @@ if __name__ == '__main__':
     # print(model)
 
     data_dir = os.path.join('../cloud_data', 'points', 'train')
-    net_input_name = 'polar_partial2d'
-    target_name = 'polar_full2d'
-    data_list = os.listdir(data_dir)[100:150]
+    net_input_name = 'partial'
+    target_name = 'log_q1'
+    data_list = os.listdir(data_dir)[10:15]
     # data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)
 
     show_figs = True

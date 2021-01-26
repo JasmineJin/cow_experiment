@@ -37,14 +37,16 @@ class PointDataSet(data.Dataset):
 
         processed = datagen.get_radar_image_pairs(raw_data)
 
-        if self.net_input_name == 'log_partial':
+        if self.net_input_name == 'log_partial' or self.net_input_name == 'log_partial_q1':
             partial0_np = processed['mag_partial0']
             partial1_np = processed['mag_partial1']
             partial_np = np.dstack((partial0_np, partial1_np))
             partial_np = 20 * np.log10(partial_np + 10 ** (-12))
             partial_np = partial_np.transpose(2, 0, 1)
+            if self.net_input_name == 'log_partial_q1':
+                partial_np = partial_np > -20 
             partial_torch = torch.from_numpy(partial_np).type(torch.float)
-            mydata['log_partial'] = partial_torch
+            mydata[self.net_input_name] = partial_torch
         
         elif self.net_input_name == 'polar_partial':
             polar_partial0_np = processed['polar_partial0']
@@ -77,11 +79,16 @@ class PointDataSet(data.Dataset):
         else:
             raise NotImplementedError
 
-        if self.target_name == 'log_full':
+        if self.target_name == 'log_full' or self.target_name == 'log_q1':
             target_np = 20 * np.log10(processed['mag_full'] + 10 **(-12))
             target_np = target_np[np.newaxis, :, :]
+            
+            if self.target_name == 'log_q1':
+                target_np = target_np > 0
+
             target_torch = torch.from_numpy(target_np).type(torch.float)
             mydata[self.target_name] = target_torch
+            
         elif self.target_name == 'polar_full':
             polar_full_np = processed['polar_full']
             polar_full_np = np.hstack([polar_full_np.real, polar_full_np.imag])
@@ -112,7 +119,7 @@ def display_data(target, output, net_input, target_name, net_input_name):
     target = target.cpu().detach()
     output = output.cpu().detach()
     net_input = net_input.cpu().detach()
-    if target_name == 'log_full':
+    if target_name == 'log_full' or target_name == 'log_q1':
         output_np = output[0, 0, :, :]
         target_np = target[0, 0, :, :]
     elif target_name == 'full' or 'polar_full2d':
@@ -138,7 +145,7 @@ def display_data(target, output, net_input, target_name, net_input_name):
     else:
         raise NotImplementedError
     
-    if net_input_name == 'log_partial':
+    if net_input_name == 'log_partial' or net_input_name == 'log_partial_q1':
         input0 = net_input[0, 0, :, :]
         input1 = net_input[0, 1, :, :]
     elif net_input_name == 'partial' or 'polar_partial2d':
@@ -185,7 +192,7 @@ def display_data(target, output, net_input, target_name, net_input_name):
 
 def get_input_image_grid(net_input, net_input_name):
     net_input = net_input.cpu().detach()
-    if net_input_name == 'log_partial':
+    if net_input_name == 'log_partial' or net_input_name == 'log_partial_q1':
         input0 = net_input[0, 0, :, :]
         input1 = net_input[0, 1, :, :]
     elif net_input_name == 'partial':
@@ -219,7 +226,7 @@ def get_input_image_grid(net_input, net_input_name):
 def get_output_target_image_grid(output, target, target_name):
     target = target.cpu().detach()
     output = output.cpu().detach()
-    if target_name == 'log_full':
+    if target_name == 'log_full' or target_name == 'log_q1':
         output_np = output[0, 0, :, :]
         target_np = target[0, 0, :, :]
     elif target_name == 'full':
@@ -257,8 +264,8 @@ def matplotlib_imshow(img):
 if __name__ == '__main__':
     # import matplotlib.pyplot as plt
     data_dir = os.path.join('../cloud_data', 'points', 'train')
-    net_input_name = 'polar_partial'
-    target_name = 'polar_full'
+    net_input_name = 'log_partial_q1'
+    target_name = 'log_q1'
     data_list = os.listdir(data_dir)
     # data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)
 
@@ -269,7 +276,7 @@ if __name__ == '__main__':
     mse = nn.MSELoss(reduction = 'sum')
 
     mydataset = PointDataSet(data_dir, data_list, net_input_name, target_name)
-    mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= False, num_workers= 4)
+    mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= True, num_workers= 4)
     
     for batch_idx, sample in enumerate(mydataloader):
         for name in sample:
@@ -295,8 +302,10 @@ if __name__ == '__main__':
             # print(sample['x_points'])
             # print(sample['y_points'])
             # display_data(target, target, net_input, target_name, net_input_name)
+            plt.figure()
             inputgrid = get_input_image_grid(net_input, net_input_name)
             matplotlib_imshow(inputgrid)
+            plt.figure()
             img_grid = get_output_target_image_grid(target, target, target_name)
             matplotlib_imshow(img_grid)
             # print(inputgrid.size())
@@ -308,7 +317,18 @@ if __name__ == '__main__':
         ##################################################################################
         # check the data process
         ##################################################################################
+    
+    # #######################################################
+    # # test quantizer
+    # #######################################################
+    # mydata = np.linspace(-1, 11, num = 500)
+    # q_mydata = datagen.quantizer(mydata, low = 0, high = 9, n_levels = 5)
 
+    # plt.figure()
+    # plt.plot(mydata, q_mydata)
+    # plt.show()
+
+    #######################################################
     # filepath = os.path.join(data_dir, data_list[0])
     # # mydata['file_path'] = filepath
     # npzfile = np.load(filepath)

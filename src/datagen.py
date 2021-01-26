@@ -184,6 +184,25 @@ def get_radar_image_pairs(radar_response):
     
     return output
 
+def quantizer(data, low, high, n_levels):
+    """
+    high = low + (n_levels - 1) * delta
+    delta = (high - low) / (n_levels - 1)
+    input: numpy array
+    output: integers in range[0, n_levels - 1]
+    """
+    data = np.copy(data)
+    data[data < low] = low
+    data[data > high] = high
+    delta = (high - low) / (n_levels - 1)
+    
+    data = np.floor((data - low) / delta)
+
+    return data
+
+def dequantizer(quantized_data, low, high, n_levels):
+    return quantized_data
+
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import argparse

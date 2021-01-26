@@ -72,10 +72,18 @@ if __name__ == '__main__':
     # print(vars(args))
     # print(args)
     ##########################################################################
+    #  get the final layer's activation function
+    ##########################################################################
+    if args.final_act == 'sigmoid':
+        final_act = nn.Sigmoid
+    else:
+        final_act = None
+
+    ##########################################################################
     # set up model
     ##########################################################################
     if args.net_type == 'unet2d':
-        model = models.UnetGenerator(input_nc = args.in_channels, output_nc = args.out_channels, num_downs = args.depth, ngf = args.mid_channels, use_bias = args.use_bias)
+        model = models.UnetGenerator(input_nc = args.in_channels, output_nc = args.out_channels, num_downs = args.depth, ngf = args.mid_channels, use_bias = args.use_bias, final_act = final_act)
         # model = models.UNet2D(in_channels= args.in_channels, out_channels=args.out_channels, mid_channels= args.mid_channels, depth = args.depth, kernel_size= args.kernel_size, padding = args.padding, dilation= args.dilation, device = device, sig_layer = True)
     elif args.net_type == 'unet1d':
         model = models.UnetGenerator1D(input_nc = args.in_channels, output_nc = args.out_channels, num_downs = args.depth, ngf = args.mid_channels, use_bias = args.use_bias)
@@ -88,7 +96,7 @@ if __name__ == '__main__':
     
     model.to(device)
     print('created model: ')
-    print(model)
+    # print(model)
 
     #########################################################################
     # define loss function #TODO add option for l1 loss
@@ -105,6 +113,8 @@ if __name__ == '__main__':
     elif args.loss_type == 'l1':
         def myloss(output, target):
             return torch.mean(torch.abs(output - target))
+    elif args.loss_type == "bce":
+        myloss = nn.BCELoss(reduction = args.reduction)
     else:
         raise NotImplementedError('loss function not implemented')
     
@@ -127,7 +137,7 @@ if __name__ == '__main__':
         print('taking validation data from directory:', data_dir_val)
         data_list_val = os.listdir(data_dir_val)
         val_dataset = mydata.PointDataSet(data_dir_val, data_list_val[0: args.num_val], args.net_input_name, args.target_name)
-        val_dataloader = data.DataLoader(val_dataset, batch_size = 1, shuffle= args.shuffle_data, num_workers= 1)
+        val_dataloader = data.DataLoader(val_dataset, batch_size = 1, shuffle= False, num_workers= 1)
 
     ##########################################################################
     # set up optimizer
@@ -148,7 +158,7 @@ if __name__ == '__main__':
     # set up summmary writer
     ##########################################################################
     #
-    writer_directory = os.path.join('runs', 'experiment_with_' + args.arg_file)
+    writer_directory = os.path.join('runs', 'experiment_with_' + args.arg_file + args.exp_name)
     writer = SummaryWriter(writer_directory)
 
     ##########################################################################
@@ -192,7 +202,7 @@ if __name__ == '__main__':
                 print(num_train_samples, train_loss, flush = True)
 
         # go through validation data
-        model.eval()
+        # model.eval()
         for batch_idx, sample in enumerate(val_dataloader):
             target = sample[target_name]
             net_input = sample[net_input_name]
@@ -218,13 +228,15 @@ if __name__ == '__main__':
             # writer.add_image('output and target pair after epoch ' + str(e), img_grid)
             writer.add_scalar('validation loss', val_loss, e)
             writer.add_scalar('training loss', train_loss, e)
-            if args.show_image:
-                mydata.display_data(target, myoutput, net_input, target_name, net_input_name)
+            # if args.show_image:
+            #     mydata.display_data(target, myoutput, net_input, target_name, net_input_name)
 
-        # print stuff
+        # print stuff and display stuff 
         if e % print_every == 0:
             print(e, 'train loss', train_loss)
             print(e, 'val loss', val_loss)
+            if args.show_image:
+                mydata.display_data(target, myoutput, net_input, target_name, net_input_name)
 
         # check model updates
         if check_every != 0 and e % check_every == 0:
