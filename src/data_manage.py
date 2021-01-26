@@ -77,7 +77,7 @@ class PointDataSet(data.Dataset):
             partial_torch = torch.from_numpy(partial_np).type(torch.float)
             mydata['partial'] = partial_torch
         else:
-            raise NotImplementedError
+            raise NotImplementedError('input name not implemented for dataset')
 
         if self.target_name == 'log_full' or self.target_name == 'log_q1':
             target_np = 20 * np.log10(processed['mag_full'] + 10 **(-12))
@@ -108,7 +108,7 @@ class PointDataSet(data.Dataset):
             full_torch = torch.from_numpy(full_np).type(torch.float)
             mydata[self.target_name] = full_torch
         else:
-            raise NotImplementedError
+            raise NotImplementedError('target name not implemented for dataset')
         
         return mydata
 
@@ -195,7 +195,7 @@ def get_input_image_grid(net_input, net_input_name):
     if net_input_name == 'log_partial' or net_input_name == 'log_partial_q1':
         input0 = net_input[0, 0, :, :]
         input1 = net_input[0, 1, :, :]
-    elif net_input_name == 'partial':
+    elif net_input_name == 'partial' or net_input_name == 'polar_partial2d':
         real0 = net_input[0, 0, :, :]
         imag0 = net_input[0, 1, :, :]
         mag0 = np.abs(real0 + 1j * imag0) + 10 ** (-12)
@@ -229,7 +229,7 @@ def get_output_target_image_grid(output, target, target_name):
     if target_name == 'log_full' or target_name == 'log_q1':
         output_np = output[0, 0, :, :]
         target_np = target[0, 0, :, :]
-    elif target_name == 'full':
+    elif target_name == 'full' or target_name == 'polar_full2d':
         output_real = output[0, 0, :, :]
         output_imag = output[0, 1, :, :]
         output_mag = np.abs(output_real + 1j * output_imag) + 10 ** (-12)
@@ -238,7 +238,7 @@ def get_output_target_image_grid(output, target, target_name):
         target_imag = target[0, 1, :, :]
         target_mag = np.abs(target_real + 1j * target_imag) + 10 **(-12)
         target_np = 20 * np.log(target_mag)
-    elif target_name == 'polar_full' or target_name == 'polar_full2d':
+    elif target_name == 'polar_full':
         # print('output shape:', output.shape)
         output_real = output[0, :, 0: output.shape[2]// 2]
         output_imag = output[0, :, output.shape[2]//2 : output.shape[2]]
@@ -264,8 +264,8 @@ def matplotlib_imshow(img):
 if __name__ == '__main__':
     # import matplotlib.pyplot as plt
     data_dir = os.path.join('../cloud_data', 'points', 'train')
-    net_input_name = 'log_partial_q1'
-    target_name = 'log_q1'
+    net_input_name = 'polar_partial2d'
+    target_name = 'polar_full2d'
     data_list = os.listdir(data_dir)
     # data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)
 
@@ -276,7 +276,7 @@ if __name__ == '__main__':
     mse = nn.MSELoss(reduction = 'sum')
 
     mydataset = PointDataSet(data_dir, data_list, net_input_name, target_name)
-    mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= True, num_workers= 4)
+    mydataloader = data.DataLoader(mydataset, batch_size = 10, shuffle= True, num_workers= 4)
     
     for batch_idx, sample in enumerate(mydataloader):
         for name in sample:

@@ -90,6 +90,8 @@ if __name__ == '__main__':
         # model = models.UNet1D(in_channels= args.in_channels, out_channels=args.out_channels, mid_channels= args.mid_channels, depth = args.depth, kernel_size= args.kernel_size, padding = args.padding, dilation= args.dilation, device = device)
     elif args.net_type == 'unetvh':
         model = models.UnetGeneratorVH(input_nc = args.in_channels, output_nc = args.out_channels, num_downs = args.depth, ngf = args.mid_channels, use_bias = args.use_bias)
+    # elif args.net_type == 'myunet':
+    #     model = models.UNet2D(in_channels = args.in_channels, out_channels = args.out_channels, mid_channels = args.mid_channels)
     else:
         print(args.net_type)
         raise NotImplementedError
