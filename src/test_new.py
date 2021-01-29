@@ -29,7 +29,7 @@ if __name__ == '__main__':
     device = torch.device('cpu')
     data_dir = os.path.join('..\cloud_data', 'points', 'train')
     data_list = os.listdir(data_dir)
-    model_path = 'single_point_log_q1_mini.pt'
+    model_path = 'single_point_unet_lin_tiny.pt'
     # model_path = os.path.join('models_trained', 'point_model2d_final.pt')
     model = torch.load(model_path, map_location=device)
     model.to(device)
@@ -38,9 +38,9 @@ if __name__ == '__main__':
     # print(model)
 
     data_dir = os.path.join('../cloud_data', 'points', 'train')
-    net_input_name = 'partial'
+    net_input_name = 'raw_partial'
     target_name = 'log_q1'
-    data_list = os.listdir(data_dir)[10:15]
+    data_list = os.listdir(data_dir)[0:1]
     # data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)
 
     show_figs = True
@@ -58,18 +58,6 @@ if __name__ == '__main__':
         for name in sample:
             print(name)
             thing = sample[name]
-            # if name == net_input_name or name == target_name:
-            #     print('size: ', thing.size())
-            #     print('minimum value: ', torch.min(thing))
-            #     print('maximum value: ', torch.max(thing))
-            #     print('average value: ', torch.mean(thing))
-            #     print('variance: ', torch.var(thing))
-            #     zero_tensor = torch.zeros(thing.size())
-            #     # print('0:', torch.sum(zero_tensor))
-            #     mynorm = mse(thing, zero_tensor)
-            #     print('sum abs squared: ', mynorm.item())
-            # else:
-            #     print(thing)
         nums_examined += 1
         print(nums_examined)
         if show_figs:
@@ -81,9 +69,16 @@ if __name__ == '__main__':
             # print(sample['x_points'])
             # print(sample['y_points'])
 
-            mydata.display_data(target, net_output, net_input, target_name, net_input_name)
-
+            # mydata.display_data(target, net_output, net_input, target_name, net_input_name)
+            # plt.figure()
+            # inputgrid = mydata.get_input_image_grid(net_input, net_input_name)
+            # mydata.matplotlib_imshow(inputgrid, 'input')
+            plt.figure()
+            img_grid = mydata.get_output_target_image_grid(net_output, target, target_name)
+            mydata.matplotlib_imshow(img_grid, 'output and target')
+            # print(inputgrid.size())
             plt.show()
+            # plt.show()
         
         if nums_examined >= nums_examine:
             break

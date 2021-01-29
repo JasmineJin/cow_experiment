@@ -3,8 +3,8 @@
     "num_train":     1000,
     "num_val":     100,
     "loss_type": "bce",
-    "train_data_dir": ["..", "cloud_data", "points", "train"], 
-    "val_data_dir": ["..", "cloud_data", "points", "val"], 
+    "train_data_dir": ["..", "cloud_data", "pre_processed_points", "train"], 
+    "val_data_dir": ["..", "cloud_data", "pre_processed_points", "val"], 
     "net_input_name":     "log_partial_q1",
     "target_name":     "log_q1",
     "optimizer_type": "sgd",
@@ -28,6 +28,7 @@
     "reduction": "mean",
     "show_image": false,
     "shuffle_data": true,
+    "pre_processed": true, 
     "exp_name": "1bit",
     "final_act": "sigmoid"
 

@@ -203,14 +203,29 @@ def quantizer(data, low, high, n_levels):
 def dequantizer(quantized_data, low, high, n_levels):
     return quantized_data
 
+def get_vline():
+    start_x = np.random.rand() * max_rng * 2 - max_rng
+    start_y = np.random.rand() * max_rng
+    all_point_y = np.arange(50) * rng_res + start_y
+    all_point_x = np.ones(all_point_y.shape) * start_x
+    return all_point_x, all_point_y
+
+def get_random_point(num_points):
+    all_ranges = np.random.rand(num_points) * max_rng
+    all_angles = np.random.rand(num_points) * np.pi
+    all_point_x = all_ranges * np.cos(all_angles)
+    all_point_y = all_ranges * np.sin(all_angles)
+    return all_point_x, all_point_y
+
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import argparse
 
     parser = argparse.ArgumentParser(description='set mode for data generation')
-    parser.add_argument('--mode', type = str, default = 'train')
+    parser.add_argument('--mode', type = str, default = 'val')
     parser.add_argument('--max_num_points', type = int, default = 1)
-    parser.add_argument('--num_samples', type = int, default = 1000)
+    parser.add_argument('--num_samples', type = int, default = 10)
+    parser.add_argument('--sample_name', type = str, default = '')
     args = parser.parse_args()
 
     mode = args.mode
@@ -219,28 +234,56 @@ if __name__ == '__main__':
     print(mode)
     print(max_num_points)
     print(num_samples)
+    pre_processed = True
 
-    
-    # if mode == 'val':
-    # mode = 'val'
-    # max_num_points = 1
-    # num_samples = 1000
-    data_dir = os.path.join('cloud_data', 'points', mode)
+    data_dir = os.path.join('..\cloud_data', 'pre_processed_points', mode)
     os.makedirs(data_dir, exist_ok = True)
-    for num_points in range(1, max_num_points + 1):
-        print('making scenes with ', num_points, ' point sources')
-        for n in range(num_samples):
-            all_ranges = np.random.rand(num_points) * max_rng
-            all_angles = np.random.rand(num_points) * np.pi
-            all_point_x = all_ranges * np.cos(all_angles)
-            all_point_y = all_ranges * np.sin(all_angles)
-            scene_name = 'point_' + str(num_points) +'source_' + str(n) + '.npz'
-            save_path = os.path.join(data_dir, scene_name)
+
+    for n in range(num_samples):
+        all_point_x, all_point_y = get_random_point(1)
+
+        scene_name = args.sample_name + '_' + str(n) + '.npz'
+        save_path = os.path.join(data_dir, scene_name)
+        if pre_processed:
+            raw_data = get_scene_raw_data(all_point_x, all_point_y)
+            processed = get_radar_image_pairs(raw_data)
+            np.savez_compressed(save_path, all_point_x = all_point_x, 
+                                            all_point_y = all_point_y,
+                                            mag_full = processed['mag_full'], 
+                                            real_full = processed['real_full'],
+                                            imag_full = processed['imag_full'],
+                                            mag_partial0 = processed['mag_partial0'], 
+                                            real_partial0 = processed['real_partial0'],
+                                            imag_partial0 = processed['imag_partial0'],
+                                            mag_partial1 = processed['mag_partial1'], 
+                                            real_partial1 = processed['real_partial1'],
+                                            imag_partial1 = processed['imag_partial1'],
+                                            polar_full = processed['polar_full'],
+                                            polar_partial0 = processed['polar_partial0'],
+                                            polar_partial1 = processed['polar_partial1'])
+        else:
+            # processed = None
             np.savez_compressed(save_path, all_point_x = all_point_x, all_point_y = all_point_y)
-            # get_scene_raw_data(all_point_x, all_point_y, save_path)
+        # 
+        
+        if n % 100 == 0:
+            print(n)
+
+
+    # for num_points in range(1, max_num_points + 1):
+    #     print('making scenes with ', num_points, ' point sources')
+    #     for n in range(num_samples):
+    #         all_ranges = np.random.rand(num_points) * max_rng
+    #         all_angles = np.random.rand(num_points) * np.pi
+    #         all_point_x = all_ranges * np.cos(all_angles)
+    #         all_point_y = all_ranges * np.sin(all_angles)
+    #         scene_name = 'point_' + str(num_points) +'source_' + str(n) + '.npz'
+    #         save_path = os.path.join(data_dir, scene_name)
+    #         np.savez_compressed(save_path, all_point_x = all_point_x, all_point_y = all_point_y)
+    #         # get_scene_raw_data(all_point_x, all_point_y, save_path)
             
-            if n % 100 == 0:
-                print(n)
+    #         if n % 100 == 0:
+    #             print(n)
 
     # range_angle_label = np.zeros((num_range_bins, num_channels))
     # radar_response = np.zeros((num_range_bins, num_channels), dtype = np.complex128)

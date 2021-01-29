@@ -1,12 +1,12 @@
 {
     "train_batch_size":     1,
     "num_train":     100,
-    "num_val":     1,
-    "loss_type": "bce",
+    "num_val":     10,
+    "loss_type": "log_mse",
     "train_data_dir": ["..", "cloud_data", "points", "train"], 
     "val_data_dir": ["..", "cloud_data", "points", "val"], 
-    "net_input_name":     "log_partial_q1",
-    "target_name":     "log_q1",
+    "net_input_name":     "polar_partial2d_q1",
+    "target_name":     "polar_full2d_q1",
     "optimizer_type": "sgd",
     "learning_rate":     0.1,
     "momentum": 0.5, 
@@ -31,4 +31,4 @@
     "exp_name": "1bit",
     "final_act": "sigmoid"
 
-}
+} 

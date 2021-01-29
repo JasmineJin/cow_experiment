@@ -11,7 +11,49 @@ import queue
 import copy
 from PIL import Image
 from torchvision import transforms
+import datagen
 
+class UnetLin(nn.Module):
+    """Create a Unet-based generator"""
+
+    def __init__(self, input_nc = 1, output_nc= 1, num_downs= 8, ngf=64, norm_layer=nn.BatchNorm2d, final_act = None, use_bias = True, use_dropout=False):
+        """Construct a Unet generator
+        Parameters:
+            input_nc (int)  -- the number of channels in input images
+            output_nc (int) -- the number of channels in output images
+            num_downs (int) -- the number of downsamplings in UNet. For example, # if |num_downs| == 7,
+                                image of size 128x128 will become of size 1x1 # at the bottleneck
+            ngf (int)       -- the number of filters in the last conv layer
+            norm_layer      -- normalization layer
+        We construct the U-Net from the innermost layer to the outermost layer.
+        It is a recursive process.
+        """
+        
+        super(UnetLin, self).__init__()
+        # construct the linear structure
+        self.lin1 = nn.Sequential(nn.Linear(4 * datagen.num_samples, datagen.num_channels, bias = use_bias), 
+                                    nn.LeakyReLU(),
+                                    )
+        self.lin2 = nn.Sequential(nn.Linear(datagen.num_channels, datagen.num_channels, bias = use_bias),
+                                    nn.LeakyReLU(),
+                                    )
+        # construct unet structure
+        unet_block = UnetSkipConnectionBlock(ngf * 8, ngf * 8, input_nc=None, submodule=None, norm_layer=norm_layer, innermost=True, use_bias = use_bias, final_act = final_act)  # add the innermost layer
+        for i in range(num_downs - 5):          # add intermediate layers with ngf * 8 filters
+            unet_block = UnetSkipConnectionBlock(ngf * 8, ngf * 8, input_nc=None, submodule=unet_block, norm_layer=norm_layer, use_dropout=use_dropout, use_bias = use_bias, final_act = final_act)
+        # gradually reduce the number of filters from ngf * 8 to ngf
+        unet_block = UnetSkipConnectionBlock(ngf * 4, ngf * 8, input_nc=None, submodule=unet_block, norm_layer=norm_layer, use_bias = use_bias, final_act = final_act)
+        unet_block = UnetSkipConnectionBlock(ngf * 2, ngf * 4, input_nc=None, submodule=unet_block, norm_layer=norm_layer, use_bias = use_bias, final_act = final_act)
+        unet_block = UnetSkipConnectionBlock(ngf, ngf * 2, input_nc=None, submodule=unet_block, norm_layer=norm_layer, use_bias = use_bias, final_act = final_act)
+        self.model = UnetSkipConnectionBlock(output_nc, ngf, input_nc=1, submodule=unet_block, outermost=True, norm_layer=norm_layer, use_bias = use_bias, final_act = final_act)  # add the outermost layer
+
+    def forward(self, input):
+        """Standard forward"""
+        x1 = self.lin1(input)
+        # return self.lin2(x1).unsqueeze(1)
+        x2 = self.lin2(x1)
+        x3 = x2.unsqueeze(1)
+        return self.model(x3)
 
 class UnetGenerator(nn.Module):
     """Create a Unet-based generator"""
@@ -42,7 +84,6 @@ class UnetGenerator(nn.Module):
     def forward(self, input):
         """Standard forward"""
         return self.model(input)
-
 
 class UnetSkipConnectionBlock(nn.Module):
     """Defines the Unet submodule with skip connection.
@@ -371,12 +412,16 @@ class MyModel(nn.Module):
 
 if __name__ == '__main__':
     device = torch.device('cpu')
-    mymodel = MyModel()
-    myinput = torch.tensor([[[[ 1.,  2,  3,  4],
-                            [ 5,  6,  7,  8],
-                            [ 9, 10, 11, 12],
-                            [13, 14, 15, 16]]]])
-    myoutput = mymodel(myinput)
+    mynet = UnetLin()
+    myinput = torch.rand(6, 256, 64)
+    myoutput = mynet(myinput)
+    print(myoutput.size())
+    # mymodel = MyModel()
+    # myinput = torch.tensor([[[[ 1.,  2,  3,  4],
+    #                         [ 5,  6,  7,  8],
+    #                         [ 9, 10, 11, 12],
+    #                         [13, 14, 15, 16]]]])
+    # myoutput = mymodel(myinput)
     # myconv = UNet2D(1, 1, mid_channels = 16, depth = 6, kernel_size= 3, padding = 2, dilation = 2, bias = True, sig_layer = False) #DoubleConv2D(1, 1)#
     # model = UnetGeneratorVH(1, 1, 7)
     # summary(model, (1, 256, 512))

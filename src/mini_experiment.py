@@ -92,6 +92,8 @@ if __name__ == '__main__':
         model = models.UnetGeneratorVH(input_nc = args.in_channels, output_nc = args.out_channels, num_downs = args.depth, ngf = args.mid_channels, use_bias = args.use_bias)
     # elif args.net_type == 'myunet':
     #     model = models.UNet2D(in_channels = args.in_channels, out_channels = args.out_channels, mid_channels = args.mid_channels)
+    elif args.net_type == 'unet_lin':
+        model = models.UnetLin(input_nc = args.in_channels, output_nc = args.out_channels, num_downs = args.depth, ngf = args.mid_channels, use_bias = args.use_bias, final_act = final_act)
     else:
         print(args.net_type)
         raise NotImplementedError
@@ -128,7 +130,7 @@ if __name__ == '__main__':
     data_dir_train = os.path.join(*args.train_data_dir)
     print('taking training data from directory:', data_dir_train)
     data_list_train = os.listdir(data_dir_train)
-    train_dataset = mydata.PointDataSet(data_dir_train, data_list_train[0: args.num_train], net_input_name, target_name)
+    train_dataset = mydata.PointDataSet(data_dir_train, data_list_train[0: args.num_train], net_input_name, target_name, args.pre_processed)
     train_dataloader = data.DataLoader(train_dataset, batch_size = 1, shuffle= args.shuffle_data, num_workers= 1)
 
     if len(args.val_data_dir) == 0:
@@ -138,7 +140,7 @@ if __name__ == '__main__':
         data_dir_val = os.path.join(*args.val_data_dir)
         print('taking validation data from directory:', data_dir_val)
         data_list_val = os.listdir(data_dir_val)
-        val_dataset = mydata.PointDataSet(data_dir_val, data_list_val[0: args.num_val], args.net_input_name, args.target_name)
+        val_dataset = mydata.PointDataSet(data_dir_val, data_list_val[0: args.num_val], args.net_input_name, args.target_name, args.pre_processed)
         val_dataloader = data.DataLoader(val_dataset, batch_size = 1, shuffle= False, num_workers= 1)
 
     ##########################################################################
@@ -204,7 +206,6 @@ if __name__ == '__main__':
                 print(num_train_samples, train_loss, flush = True)
 
         # go through validation data
-        # model.eval()
         for batch_idx, sample in enumerate(val_dataloader):
             target = sample[target_name]
             net_input = sample[net_input_name]
@@ -213,8 +214,7 @@ if __name__ == '__main__':
             #forward
             myoutput = model(net_input)
             lossval = myloss(myoutput, target)
-            # update epoch loss
-            # print('val loss: ', lossval)
+
             val_loss += (lossval.item() - val_loss) / num_val_samples
             num_val_samples +=1
 
@@ -238,7 +238,10 @@ if __name__ == '__main__':
             print(e, 'train loss', train_loss)
             print(e, 'val loss', val_loss)
             if args.show_image:
-                mydata.display_data(target, myoutput, net_input, target_name, net_input_name)
+                img_grid = mydata.get_output_target_image_grid(myoutput, target, target_name)
+                mydata.matplotlib_imshow(img_grid, 'output and target')
+                plt.show()
+                # mydata.display_data(target, myoutput, net_input, target_name, net_input_name)
 
         # check model updates
         if check_every != 0 and e % check_every == 0:

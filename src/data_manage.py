@@ -12,11 +12,12 @@ import torchvision.transforms as transforms
 from PIL import Image
 
 class PointDataSet(data.Dataset):
-    def __init__(self, data_dir, data_list, net_input_name = 'partial', target_name = 'full'):
+    def __init__(self, data_dir, data_list, net_input_name = 'partial', target_name = 'full', pre_processed = False):
         self.data_dir = data_dir
         self.data_list = data_list
         self.net_input_name = net_input_name
         self.target_name = target_name
+        self.pre_processed = pre_processed
     def __len__(self):
         
         return len(self.data_list)
@@ -33,9 +34,12 @@ class PointDataSet(data.Dataset):
         y_points = npzfile['all_point_y']
         mydata['x_points'] = x_points
         mydata['y_points'] = y_points
-        raw_data = datagen.get_scene_raw_data(x_points, y_points)
 
-        processed = datagen.get_radar_image_pairs(raw_data)
+        if self.pre_processed:
+            processed = npzfile
+        else:
+            raw_data = datagen.get_scene_raw_data(x_points, y_points)
+            processed = datagen.get_radar_image_pairs(raw_data)
 
         if self.net_input_name == 'log_partial' or self.net_input_name == 'log_partial_q1':
             partial0_np = processed['mag_partial0']
@@ -66,6 +70,15 @@ class PointDataSet(data.Dataset):
             polar_partial_np = polar_partial_np.transpose(2, 0, 1)
             polar_partial_torch = torch.from_numpy(polar_partial_np).type(torch.float)
             mydata['polar_partial2d'] = polar_partial_torch
+        
+        elif self.net_input_name == 'polar_partial2d_q1':
+            polar_partial0_np = processed['polar_partial0']
+            polar_partial1_np = processed['polar_partial1']
+            polar_partial_np = np.dstack([np.abs(polar_partial0_np), np.abs(polar_partial1_np)])
+            polar_partial_np = polar_partial_np.transpose(2, 0, 1)
+            polar_partial_np = polar_partial_np > 0.5
+            polar_partial_torch = torch.from_numpy(polar_partial_np).type(torch.float)
+            mydata[self.net_input_name] = polar_partial_torch
 
         elif self.net_input_name == 'partial':
             real_partial0_np = processed['real_partial0']
@@ -76,6 +89,13 @@ class PointDataSet(data.Dataset):
             partial_np = partial_np.transpose(2, 0, 1)         
             partial_torch = torch.from_numpy(partial_np).type(torch.float)
             mydata['partial'] = partial_torch
+        elif self.net_input_name == 'raw_partial':
+            raw0 = raw_data[:, 0: datagen.num_samples]
+            raw1 = raw_data[:, raw_data.shape[1] - datagen.num_samples: raw_data.shape[1]]
+            raw_np = np.hstack([raw0.real, raw0.imag, raw1.real, raw1.imag])
+            # raw_np = raw_np.transpose(2, 0, 1)
+            raw_torch = torch.from_numpy(raw_np).type(torch.float)
+            mydata[self.net_input_name] = raw_torch
         else:
             raise NotImplementedError('input name not implemented for dataset')
 
@@ -100,6 +120,13 @@ class PointDataSet(data.Dataset):
             polar_full_np = polar_full_np.transpose(2, 0, 1)
             polar_full_torch = torch.from_numpy(polar_full_np).type(torch.float)
             mydata[self.target_name] = polar_full_torch
+        elif self.target_name == 'polar_full2d_q1':
+            polar_full_np = processed['polar_full']
+            polar_full_np = np.abs(polar_full_np)
+            polar_full_np = polar_full_np[np.newaxis, :, :]
+            polar_full_np = polar_full_np > 1
+            polar_full_torch = torch.from_numpy(polar_full_np).type(torch.float)
+            mydata[self.target_name] = polar_full_torch
         elif self.target_name == 'full':
             real_full_np = processed['real_full']
             imag_full_np = processed['imag_full']
@@ -107,6 +134,9 @@ class PointDataSet(data.Dataset):
             full_np = full_np.transpose(2, 0, 1)
             full_torch = torch.from_numpy(full_np).type(torch.float)
             mydata[self.target_name] = full_torch
+        # elif self.target_name == 'raw_full':
+        #     raw_np = np.dstack([raw_data.real, raw_data.imag])
+            
         else:
             raise NotImplementedError('target name not implemented for dataset')
         
@@ -192,7 +222,7 @@ def display_data(target, output, net_input, target_name, net_input_name):
 
 def get_input_image_grid(net_input, net_input_name):
     net_input = net_input.cpu().detach()
-    if net_input_name == 'log_partial' or net_input_name == 'log_partial_q1':
+    if net_input_name == 'log_partial' or net_input_name == 'log_partial_q1' or net_input_name == 'polar_partial2d_q1':
         input0 = net_input[0, 0, :, :]
         input1 = net_input[0, 1, :, :]
     elif net_input_name == 'partial' or net_input_name == 'polar_partial2d':
@@ -219,14 +249,14 @@ def get_input_image_grid(net_input, net_input_name):
         raise NotImplementedError('invalid input name')
     input0_tensor = input0.unsqueeze(0)
     input1_tensor = input1.unsqueeze(0)
-    inputgrid = torchvision.utils.make_grid([input0_tensor, input1_tensor], padding = 20)
+    inputgrid = torchvision.utils.make_grid([input0_tensor, input1_tensor], padding = 20, pad_value = 1)
 
     return inputgrid
 
 def get_output_target_image_grid(output, target, target_name):
     target = target.cpu().detach()
     output = output.cpu().detach()
-    if target_name == 'log_full' or target_name == 'log_q1':
+    if target_name == 'log_full' or target_name == 'log_q1' or target_name == 'polar_full2d_q1':
         output_np = output[0, 0, :, :]
         target_np = target[0, 0, :, :]
     elif target_name == 'full' or target_name == 'polar_full2d':
@@ -254,35 +284,59 @@ def get_output_target_image_grid(output, target, target_name):
     
     output_tensor = output_np.unsqueeze(0)
     target_tensor = target_np.unsqueeze(0)
-    img_grid = torchvision.utils.make_grid([output_tensor, target_tensor], padding = 20)
+    img_grid = torchvision.utils.make_grid([output_tensor, target_tensor], padding = 20, pad_value = 1)
     return img_grid
 
-def matplotlib_imshow(img):
+def matplotlib_imshow(img, title = 'input'):
     img_np = img.numpy()
-    plt.imshow(img_np[0, :, :])
+    plt.imshow(img_np[0, :, :], cmap = 'gray')
+    plt.title(title)
 
 if __name__ == '__main__':
     # import matplotlib.pyplot as plt
-    data_dir = os.path.join('../cloud_data', 'points', 'train')
-    net_input_name = 'polar_partial2d'
-    target_name = 'polar_full2d'
+    data_dir = os.path.join('../cloud_data', 'vlines', 'val')
+    net_input_name = 'partial' #'polar_partial2d'
+    target_name = 'log_q1' #'polar_full2d'
     data_list = os.listdir(data_dir)
-    # data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)
+    # ################################################################################
+    # # check data statistics
+    # ################################################################################
+    # filepath = os.path.join(data_dir, data_list[5])
+    # npzfile = np.load(filepath)
+    # x_points = npzfile['all_point_x']
+    # y_points = npzfile['all_point_y']
+    # print('x_points: ', x_points)
+    # print('y_points: ', y_points)
+    # raw_data = datagen.get_scene_raw_data(x_points, y_points)
+    
+    # print('max magnitude: ', np.max(np.max(np.abs(raw_data))))
+    # print('min magnitude: ', np.min(np.min(np.abs(raw_data))))
 
+    # plt.figure()
+    # plt.plot(np.imag(raw_data[10, :]))
+    # plt.title('raw data for at one time')
+    # plt.show()
+
+    data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)
+    ###############################################################################
+    # check and plot data from thing
+    ###############################################################################
     show_figs = True
+    check_all = False
     nums_examine = 1
     nums_examined = 0
 
     mse = nn.MSELoss(reduction = 'sum')
 
-    mydataset = PointDataSet(data_dir, data_list, net_input_name, target_name)
-    mydataloader = data.DataLoader(mydataset, batch_size = 10, shuffle= True, num_workers= 4)
+    mydataset = PointDataSet(data_dir, data_list, net_input_name, target_name, pre_processed = True)
+    mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= False, num_workers= 4)
     
     for batch_idx, sample in enumerate(mydataloader):
         for name in sample:
             print(name)
             thing = sample[name]
             if name == net_input_name or name == target_name:
+                # print(name)
                 print('size: ', thing.size())
                 print('minimum value: ', torch.min(thing))
                 print('maximum value: ', torch.max(thing))
@@ -302,12 +356,12 @@ if __name__ == '__main__':
             # print(sample['x_points'])
             # print(sample['y_points'])
             # display_data(target, target, net_input, target_name, net_input_name)
-            plt.figure()
+            # plt.figure()
             inputgrid = get_input_image_grid(net_input, net_input_name)
-            matplotlib_imshow(inputgrid)
+            matplotlib_imshow(inputgrid, 'input')
             plt.figure()
             img_grid = get_output_target_image_grid(target, target, target_name)
-            matplotlib_imshow(img_grid)
+            matplotlib_imshow(img_grid, 'target')
             # print(inputgrid.size())
             plt.show()
         
