@@ -211,7 +211,7 @@ def get_vline():
     return all_point_x, all_point_y
 
 def get_random_point(num_points):
-    all_ranges = np.random.rand(num_points) * max_rng
+    all_ranges = np.random.rand(num_points) * max_rng * 0.8 + max_rng * 0.1
     all_angles = np.random.rand(num_points) * np.pi
     all_point_x = all_ranges * np.cos(all_angles)
     all_point_y = all_ranges * np.sin(all_angles)
