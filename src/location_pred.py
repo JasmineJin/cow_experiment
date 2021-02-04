@@ -132,10 +132,10 @@ if __name__ == '__main__':
     #########################################################################
     net_input_name = 'log_partial_q1'# args.net_input_name
     target_name = ''# args.target_name
-    data_dir_train = os.path.join(*["..", "cloud_data", "pre_processed_points", "train"])
+    data_dir_train = os.path.join(*["cloud_data", "points", "train"])
     print('taking training data from directory:', data_dir_train)
     data_list_train = os.listdir(data_dir_train)
-    train_dataset = mydata.PointDataSet(data_dir_train, data_list_train[0: 100], net_input_name, target_name, True)
+    train_dataset = mydata.PointDataSet(data_dir_train, data_list_train[0: -1], net_input_name, target_name, True)
     train_dataloader = data.DataLoader(train_dataset, batch_size = 1, shuffle= False, num_workers= 1)
 
     if True:#len(args.val_data_dir) == 0:
@@ -175,9 +175,9 @@ if __name__ == '__main__':
     ##########################################################################
     # other training configs
     ##########################################################################
-    num_epochs = 100
-    print_every = 10
-    check_every = 10
+    num_epochs = 10
+    print_every = 1
+    check_every = 1
     log_every = 1
 
     #########################################################################
@@ -286,4 +286,4 @@ if __name__ == '__main__':
     ##############################################################################
     # save model
     ##############################################################################
-    torch.save(model, 'predict_loc_overfit.pt')
+    torch.save(model, 'predict_loc_1000.pt')
