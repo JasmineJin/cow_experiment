@@ -243,11 +243,11 @@ if __name__ == '__main__':
     print(num_samples)
     pre_processed = False
 
-    data_dir = os.path.join('..\cloud_data', 'hlines', mode)
+    data_dir = os.path.join('..\cloud_data', 'points', mode)
     os.makedirs(data_dir, exist_ok = True)
 
     for n in range(num_samples):
-        all_point_x, all_point_y = get_hline()#get_random_point(1)
+        all_point_x, all_point_y = get_random_point(1)
 
         scene_name = args.sample_name + '_' + str(n) + '.npz'
         save_path = os.path.join(data_dir, scene_name)
