@@ -32,10 +32,11 @@ class PointDataSet(data.Dataset):
         x_points = npzfile['all_point_x']
         # print(x_points)
         y_points = npzfile['all_point_y']
-        mydata['x_points'] = x_points
-        mydata['y_points'] = y_points
+        mydata['x_points'] = torch.from_numpy(x_points).type(torch.float)
+        mydata['y_points'] = torch.from_numpy(y_points).type(torch.float)
 
         if self.pre_processed:
+            raw_data = datagen.get_scene_raw_data(x_points, y_points)
             processed = npzfile
         else:
             raw_data = datagen.get_scene_raw_data(x_points, y_points)
@@ -90,6 +91,7 @@ class PointDataSet(data.Dataset):
             partial_torch = torch.from_numpy(partial_np).type(torch.float)
             mydata['partial'] = partial_torch
         elif self.net_input_name == 'raw_partial':
+
             raw0 = raw_data[:, 0: datagen.num_samples]
             raw1 = raw_data[:, raw_data.shape[1] - datagen.num_samples: raw_data.shape[1]]
             raw_np = np.hstack([raw0.real, raw0.imag, raw1.real, raw1.imag])
@@ -108,6 +110,8 @@ class PointDataSet(data.Dataset):
 
             target_torch = torch.from_numpy(target_np).type(torch.float)
             mydata[self.target_name] = target_torch
+        elif self.target_name == '':
+            pass
             
         elif self.target_name == 'polar_full':
             polar_full_np = processed['polar_full']
@@ -294,7 +298,7 @@ def matplotlib_imshow(img, title = 'input'):
 
 if __name__ == '__main__':
     # import matplotlib.pyplot as plt
-    data_dir = os.path.join('../cloud_data', 'vlines', 'val')
+    data_dir = os.path.join('../cloud_data', 'pre_processed_points', 'val')
     net_input_name = 'partial' #'polar_partial2d'
     target_name = 'log_q1' #'polar_full2d'
     data_list = os.listdir(data_dir)
@@ -323,7 +327,7 @@ if __name__ == '__main__':
     ###############################################################################
     show_figs = True
     check_all = False
-    nums_examine = 1
+    nums_examine = 10
     nums_examined = 0
 
     mse = nn.MSELoss(reduction = 'sum')

@@ -210,6 +210,13 @@ def get_vline():
     all_point_x = np.ones(all_point_y.shape) * start_x
     return all_point_x, all_point_y
 
+def get_hline():
+    start_x = np.random.rand() * max_rng * 2 - max_rng
+    start_y = np.random.rand() * max_rng
+    all_point_x = np.arange(100) * rng_res/2 + start_y
+    all_point_y = np.ones(all_point_x.shape) * start_x
+    return all_point_x, all_point_y
+
 def get_random_point(num_points):
     all_ranges = np.random.rand(num_points) * max_rng * 0.8 + max_rng * 0.1
     all_angles = np.random.rand(num_points) * np.pi
@@ -234,13 +241,13 @@ if __name__ == '__main__':
     print(mode)
     print(max_num_points)
     print(num_samples)
-    pre_processed = True
+    pre_processed = False
 
-    data_dir = os.path.join('..\cloud_data', 'pre_processed_points', mode)
+    data_dir = os.path.join('..\cloud_data', 'hlines', mode)
     os.makedirs(data_dir, exist_ok = True)
 
     for n in range(num_samples):
-        all_point_x, all_point_y = get_random_point(1)
+        all_point_x, all_point_y = get_hline()#get_random_point(1)
 
         scene_name = args.sample_name + '_' + str(n) + '.npz'
         save_path = os.path.join(data_dir, scene_name)

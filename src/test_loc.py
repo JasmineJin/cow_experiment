@@ -27,9 +27,9 @@ from numpy.fft import fft, ifft
 if __name__ == '__main__':
     print('finished importing stuff')
     device = torch.device('cpu')
-    data_dir = os.path.join('..\cloud_data', 'pre_processed_points', 'val')
+    data_dir = os.path.join('..\cloud_data', 'pre_processed_points', 'train')
     data_list = os.listdir(data_dir)[0: 10]
-    model_path = 'single_point_newmodel_mini.pt'
+    model_path = 'predict_loc_overfit.pt'
     # model_path = os.path.join('models_trained', 'point_model2d_final.pt')
     model = torch.load(model_path, map_location=device)
     model.to(device)
@@ -49,7 +49,7 @@ if __name__ == '__main__':
 
     mse = nn.MSELoss(reduction = 'sum')
     # print('cool')
-    mydataset = mydata.PointDataSet(data_dir, data_list, net_input_name, target_name)
+    mydataset = mydata.PointDataSet(data_dir, data_list, net_input_name, target_name, True)
     mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= False, num_workers=1)
     print('cool')
 
@@ -64,22 +64,35 @@ if __name__ == '__main__':
             print('showing ', sample['file_path'])
             target = sample[target_name]
             target.to(device)
+            x_loc = sample['x_points']
+            y_loc = sample['y_points']
             net_input = sample[net_input_name]
             net_input.to(device)
-            net_output = model(net_input)
+            x_pred, y_pred = model(net_input)
+            # print(e, 'train loss: ', train_loss)
+            # print('last loss: ', loss)
+            print('x pred: ', x_pred)
+            print('x true: ', x_loc)
+            print('y_pred: ', y_pred)
+            print('y_true: ', y_loc)
+            # print(e, 'val loss', val_loss)
+            # if args.show_image:
+            #     img_grid = mydata.get_output_target_image_grid(myoutput, target, target_name)
+            #     mydata.matplotlib_imshow(img_grid, 'output and target')
+            print('showing ', sample['file_path'])
             # print(sample['x_points'])
             # print(sample['y_points'])
 
-            # mydata.display_data(target, net_output, net_input, target_name, net_input_name)
-            # plt.figure()
-            inputgrid = mydata.get_input_image_grid(net_input, net_input_name)
-            mydata.matplotlib_imshow(inputgrid, 'input')
+            # # mydata.display_data(target, net_output, net_input, target_name, net_input_name)
+            # # plt.figure()
+            # inputgrid = mydata.get_input_image_grid(net_input, net_input_name)
+            # mydata.matplotlib_imshow(inputgrid, 'input')
             plt.figure()
-            img_grid = mydata.get_output_target_image_grid(net_output, target, target_name)
-            mydata.matplotlib_imshow(img_grid, 'output and target')
-            # print(inputgrid.size())
-            plt.show()
+            img_grid = mydata.get_output_target_image_grid(target, target, target_name)
+            mydata.matplotlib_imshow(img_grid, 'target and target')
+            # # print(inputgrid.size())
             # plt.show()
+            plt.show()
         
         if nums_examined >= nums_examine:
             break

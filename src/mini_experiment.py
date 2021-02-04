@@ -22,6 +22,7 @@ from torch.optim import lr_scheduler
 import torch.utils.data as data
 
 import models
+import newmodels
 import data_manage as mydata
 
 import matplotlib.pyplot as plt
@@ -90,20 +91,22 @@ if __name__ == '__main__':
         # model = models.UNet1D(in_channels= args.in_channels, out_channels=args.out_channels, mid_channels= args.mid_channels, depth = args.depth, kernel_size= args.kernel_size, padding = args.padding, dilation= args.dilation, device = device)
     elif args.net_type == 'unetvh':
         model = models.UnetGeneratorVH(input_nc = args.in_channels, output_nc = args.out_channels, num_downs = args.depth, ngf = args.mid_channels, use_bias = args.use_bias)
-    # elif args.net_type == 'myunet':
-    #     model = models.UNet2D(in_channels = args.in_channels, out_channels = args.out_channels, mid_channels = args.mid_channels)
-    elif args.net_type == 'unet_lin':
-        model = models.UnetLin(input_nc = args.in_channels, output_nc = args.out_channels, num_downs = args.depth, ngf = args.mid_channels, use_bias = args.use_bias, final_act = final_act)
+    elif args.net_type == 'unet_custom':
+        model = models.UnetGeneratorCustom(input_nc = args.in_channels, output_nc = args.out_channels, num_downs = args.depth, ngf = args.mid_channels, use_bias = args.use_bias, final_act = final_act)
+    elif args.net_type == 'tinynet':
+        model = models.MyModel(in_channels = args.in_channels, out_channels = args.out_channels, mid_channels = args.mid_channels, num_downs = args.depth, use_bias = args.use_bias)
+    elif args.net_type == 'superdense':
+        model = models.SuperDense(depth = args.depth, use_bias = args.use_bias)
     else:
         print(args.net_type)
-        raise NotImplementedError
+        raise NotImplementedError('model not implemented')
     
     model.to(device)
     print('created model: ')
     # print(model)
 
     #########################################################################
-    # define loss function #TODO add option for l1 loss
+    # define loss function 
     #########################################################################
     if args.loss_type == 'mse':
         myloss = nn.MSELoss(reduction = args.reduction)
@@ -240,6 +243,7 @@ if __name__ == '__main__':
             if args.show_image:
                 img_grid = mydata.get_output_target_image_grid(myoutput, target, target_name)
                 mydata.matplotlib_imshow(img_grid, 'output and target')
+                print('showing ', sample['file_path'])
                 plt.show()
                 # mydata.display_data(target, myoutput, net_input, target_name, net_input_name)
 
