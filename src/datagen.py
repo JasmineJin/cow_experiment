@@ -241,9 +241,9 @@ if __name__ == '__main__':
     print(mode)
     print(max_num_points)
     print(num_samples)
-    pre_processed = False
+    pre_processed = True
 
-    data_dir = os.path.join('..\cloud_data', 'points', mode)
+    data_dir = os.path.join('cloud_data', 'points', mode)
     os.makedirs(data_dir, exist_ok = True)
 
     for n in range(num_samples):
