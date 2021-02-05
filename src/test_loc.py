@@ -27,9 +27,9 @@ from numpy.fft import fft, ifft
 if __name__ == '__main__':
     print('finished importing stuff')
     device = torch.device('cpu')
-    data_dir = os.path.join('..\cloud_data', 'pre_processed_points', 'train')
-    data_list = os.listdir(data_dir)[0: 10]
-    model_path = 'predict_loc_overfit.pt'
+    data_dir = os.path.join('..\cloud_data', 'pre_processed_points', 'val')
+    data_list = os.listdir(data_dir)[97: 105]
+    model_path = 'predict_loc_100x100.pt'
     # model_path = os.path.join('models_trained', 'point_model2d_final.pt')
     model = torch.load(model_path, map_location=device)
     model.to(device)

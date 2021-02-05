@@ -126,7 +126,7 @@ if __name__ == '__main__':
     # else:
     #     raise NotImplementedError('loss function not implemented')
     def myloss(x_pred, y_pred, x_loc, y_loc):
-        return (x_pred - x_loc)**2 + (y_pred - y_loc)**2
+        return torch.mean((x_pred - x_loc)**2 + (y_pred - y_loc)**2)
     #########################################################################
     # set up training and validation dataloaders
     #########################################################################
@@ -135,8 +135,8 @@ if __name__ == '__main__':
     data_dir_train = os.path.join(*["cloud_data", "points", "train"])
     print('taking training data from directory:', data_dir_train)
     data_list_train = os.listdir(data_dir_train)
-    train_dataset = mydata.PointDataSet(data_dir_train, data_list_train[0: -1], net_input_name, target_name, True)
-    train_dataloader = data.DataLoader(train_dataset, batch_size = 1, shuffle= False, num_workers= 1)
+    train_dataset = mydata.PointDataSet(data_dir_train, data_list_train[0: 1000], net_input_name, target_name, True)
+    train_dataloader = data.DataLoader(train_dataset, batch_size = 4, shuffle= False, num_workers= 1)
 
     if True:#len(args.val_data_dir) == 0:
         val_dataloader = train_dataloader
@@ -169,15 +169,15 @@ if __name__ == '__main__':
     # set up summmary writer
     ##########################################################################
     #
-    writer_directory = os.path.join('runs', 'pred_location_100x100')
+    writer_directory = os.path.join('runs', 'pred_location_1000x100_run0')
     writer = SummaryWriter(writer_directory)
 
     ##########################################################################
     # other training configs
     ##########################################################################
-    num_epochs = 10
-    print_every = 1
-    check_every = 1
+    num_epochs = 100
+    print_every = 10
+    check_every = 10
     log_every = 1
 
     #########################################################################
@@ -240,8 +240,8 @@ if __name__ == '__main__':
             # writer.add_image('output and target pair after epoch ' + str(e), img_grid)
             # writer.add_scalar('validation loss', val_loss, e)
             writer.add_scalar('training loss', train_loss, e)
-            writer.add_scalar('x_pred', x_pred, e)
-            writer.add_scalar('y_pred', y_pred, e)
+            writer.add_scalar('x_pred', x_pred[0], e)
+            writer.add_scalar('y_pred', y_pred[0], e)
             # if args.show_image:
             #     mydata.display_data(target, myoutput, net_input, target_name, net_input_name)
 
@@ -286,4 +286,4 @@ if __name__ == '__main__':
     ##############################################################################
     # save model
     ##############################################################################
-    torch.save(model, 'predict_loc_1000.pt')
+    torch.save(model, 'predict_loc_1000x10.pt')
