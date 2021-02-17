@@ -27,7 +27,7 @@ from numpy.fft import fft, ifft
 if __name__ == '__main__':
     print('finished importing stuff')
     device = torch.device('cpu')
-    data_dir = os.path.join('..\cloud_data', 'pre_processed_points', 'val')
+    data_dir = os.path.join('..\cloud_data', 'pre_processed_points', 'train')
     data_list = os.listdir(data_dir)[97: 105]
     model_path = 'predict_loc_100x100.pt'
     # model_path = os.path.join('models_trained', 'point_model2d_final.pt')
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     # print(model)
 
     # data_dir = os.path.join('../cloud_data', 'points', 'train')
-    net_input_name = 'log_partial_q1'
+    net_input_name = 'polar_partial2d_q1'
     target_name = 'log_q1'
     # data_list = os.listdir(data_dir)
     # data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)

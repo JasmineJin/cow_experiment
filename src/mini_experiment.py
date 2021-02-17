@@ -95,8 +95,8 @@ if __name__ == '__main__':
         model = models.UnetGeneratorCustom(input_nc = args.in_channels, output_nc = args.out_channels, num_downs = args.depth, ngf = args.mid_channels, use_bias = args.use_bias, final_act = final_act)
     elif args.net_type == 'tinynet':
         model = models.MyModel(in_channels = args.in_channels, out_channels = args.out_channels, mid_channels = args.mid_channels, num_downs = args.depth, use_bias = args.use_bias)
-    elif args.net_type == 'superdense':
-        model = models.SuperDense(depth = args.depth, use_bias = args.use_bias)
+    elif args.net_type == 'new_model':
+        model = newmodels.MultiFilter(args.in_channels, args.out_channels, args.mid_channels, args.depth, args.use_bias)
     else:
         print(args.net_type)
         raise NotImplementedError('model not implemented')
@@ -112,6 +112,10 @@ if __name__ == '__main__':
         myloss = nn.MSELoss(reduction = args.reduction)
     elif args.loss_type == 'log_mse':
         mse = nn.MSELoss(reduction = args.reduction)
+        def myloss(output, target):
+            return torch.log(mse(output, target))
+    elif args.loss_type == 'log_bce':
+        mse = nn.BCELoss(reduction = args.reduction)
         def myloss(output, target):
             return torch.log(mse(output, target))
     elif args.loss_type == 'log_ratio':
@@ -189,11 +193,14 @@ if __name__ == '__main__':
         num_val_samples = 1
         # go through training data
         model.train()
-        for batch_idx, sample in enumerate(train_dataloader):
+        for batch_idx, sample in enumerate(train_dataloader):           
             target = sample[target_name]
-            net_input = sample[net_input_name]
-            target = target.to(device)
-            net_input = net_input.to(device)
+            # target = target.to(device)
+            if args.train_auto:
+                net_input = target
+            else:
+                # target = sample[target_name]
+                net_input = net_input.to(device)
             #forward
             myoutput = model(net_input)
             loss = myloss(myoutput, target)
@@ -210,8 +217,12 @@ if __name__ == '__main__':
 
         # go through validation data
         for batch_idx, sample in enumerate(val_dataloader):
+            # target = sample[target_name]
             target = sample[target_name]
-            net_input = sample[net_input_name]
+            if args.train_auto:
+                net_input = target
+            else:
+                net_input = sample[net_input_name]
             target = target.to(device)
             net_input = net_input.to(device)
             #forward

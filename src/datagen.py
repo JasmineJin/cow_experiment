@@ -145,7 +145,7 @@ def get_radar_image_pairs(radar_response):
     rng_vector = np.arange(num_range_bins) * rng_res
     # thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot)), 25, 25)
 
-    radar_ra_plot_thresholded = radar_ra_plot# * thresholding_mtx
+    radar_ra_plot_thresholded = radar_ra_plot #* thresholding_mtx
     normal_plot_real, x, y = trans.polar_to_rect(np.real(radar_ra_plot_thresholded), wl, num_channels, rng_vector, 256, 512)
     normal_plot_imag, x, y = trans.polar_to_rect(np.imag(radar_ra_plot_thresholded), wl, num_channels, rng_vector, 256, 512)
     normal_plot = np.abs(normal_plot_real + 1j * normal_plot_imag)
@@ -162,7 +162,7 @@ def get_radar_image_pairs(radar_response):
 
     radar_ra_plot_partial1 = process_array(radar_response[:, num_channels - num_samples : num_channels])
     # thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot_partial1)), 25, 25)
-    radar_ra_plot_partial1_thresholded = radar_ra_plot_partial1# * thresholding_mtx
+    radar_ra_plot_partial1_thresholded = radar_ra_plot_partial1 #* thresholding_mtx
 
     normal_plot_partial1_real, x, y = trans.polar_to_rect(np.real(radar_ra_plot_partial1_thresholded), wl, num_channels, rng_vector, 256, 512)
     normal_plot_partial1_imag, x, y = trans.polar_to_rect(np.imag(radar_ra_plot_partial1_thresholded), wl, num_channels, rng_vector, 256, 512)
@@ -183,25 +183,6 @@ def get_radar_image_pairs(radar_response):
                 'polar_partial1': radar_ra_plot_partial1_thresholded}
     
     return output
-
-def quantizer(data, low, high, n_levels):
-    """
-    high = low + (n_levels - 1) * delta
-    delta = (high - low) / (n_levels - 1)
-    input: numpy array
-    output: integers in range[0, n_levels - 1]
-    """
-    data = np.copy(data)
-    data[data < low] = low
-    data[data > high] = high
-    delta = (high - low) / (n_levels - 1)
-    
-    data = np.floor((data - low) / delta)
-
-    return data
-
-def dequantizer(quantized_data, low, high, n_levels):
-    return quantized_data
 
 def get_vline():
     start_x = np.random.rand() * max_rng * 2 - max_rng
@@ -243,7 +224,7 @@ if __name__ == '__main__':
     print(num_samples)
     pre_processed = True
 
-    data_dir = os.path.join('cloud_data', 'points', mode)
+    data_dir = os.path.join('cloud_data', 'single_points', mode)
     os.makedirs(data_dir, exist_ok = True)
 
     for n in range(num_samples):

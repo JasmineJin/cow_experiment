@@ -13,6 +13,75 @@ from PIL import Image
 from torchvision import transforms
 import datagen
 
+class MultiFilterDown(nn.Module):
+    def __init__(self, in_channels, mid_channels, depth, use_bias = True):
+        super(MultiFilterDown, self).__init__()
+
+        conv_3x3 = nn.Sequential(nn.Conv2d(in_channels, mid_channels, kernel_size = 3, dilation = 2, padding = 2, padding_mode = 'circular', bias = use_bias), 
+                            nn.BatchNorm2d(mid_channels),
+                            nn.ReLU(),
+                            nn.MaxPool2d(2),
+                        )
+        conv_5x5 = nn.Sequential(nn.Conv2d(in_channels, mid_channels, kernel_size = 5, dilation = 2, padding = 4, padding_mode = 'circular', bias = use_bias), 
+                            nn.BatchNorm2d(mid_channels),
+                            nn.ReLU(),
+                            nn.MaxPool2d(2),
+                        )
+        layer3x3 = [conv_3x3]
+        layer5x5 = [conv_5x5]
+        for i in range(depth):
+            layer3x3 +=[ nn.Sequential(nn.Conv2d(mid_channels, mid_channels, kernel_size = 3, dilation = 2, padding = 2, padding_mode = 'circular', bias = use_bias), 
+                            nn.BatchNorm2d(mid_channels),
+                            nn.ReLU(),
+                            nn.MaxPool2d(2),
+                        )]
+            layer5x5 += [nn.Sequential(nn.Conv2d(mid_channels, mid_channels, kernel_size = 5, dilation = 2, padding = 4, padding_mode = 'circular', bias = use_bias), 
+                            nn.BatchNorm2d(mid_channels),
+                            nn.ReLU(),
+                            nn.MaxPool2d(2),
+                        )]
+        self.layer3x3 = nn.Sequential(*layer3x3)
+        self.layer5x5 = nn.Sequential(*layer5x5)
+    
+    def forward(self, x):
+        return torch.cat([self.layer3x3(x), self.layer5x5(x)], 1)
+        # self.outconv = nn.Sequential(nn.Conv2d(2 * channels, mid_channels, kernel_size = 3, dilation = 2, padding = 4, padding_mode = 'circular'), 
+        #                     nn.BatchNorm2d(mid_channels),
+        #                     nn.ReLU(),
+        #                     nn.MaxPool2d(2),
+        #                 )
+class MultiFilterUp(nn.Module):
+    def __init__(self, mid_channels, out_channels, depth, use_bias = True, last_act = nn.Sigmoid):
+        super(MultiFilterUp, self).__init__()
+        up_conv_layer = []
+        for i in range(depth):
+            up_conv_layer += [ nn.Sequential(nn.ConvTranspose2d(mid_channels, mid_channels, kernel_size = 4, dilation = 1, stride = 2, padding = 1, bias = use_bias), 
+                            nn.BatchNorm2d(mid_channels),
+                            nn.ReLU(),
+                            # nn.MaxPool2d(2),
+                        )]
+        up_conv_layer += [ nn.Sequential(nn.ConvTranspose2d(mid_channels, out_channels, kernel_size = 4, dilation = 1, stride = 2, padding = 1, bias = use_bias), 
+                            nn.BatchNorm2d(out_channels),
+                            last_act(),
+                            # nn.MaxPool2d(2),
+                        )]
+        self.upconv = nn.Sequential(*up_conv_layer)
+    def forward(self, x):
+        return self.upconv(x)
+
+class MultiFilter(nn.Module):
+    def __init__(self, in_channels, out_channels, mid_channels, depth, use_bias = True, last_act = nn.ReLU):
+        super(MultiFilter, self).__init__()
+        self.down = MultiFilterDown(in_channels, mid_channels, depth, use_bias)
+        self.up = MultiFilterUp(mid_channels * 2, out_channels, depth, use_bias, last_act)
+        # self.model = nn.Sequential(self.down, self.up)
+    
+    def forward(self, x):
+        x = self.down(x)
+        # print('mean in features: ', torch.mean(torch.abs(x)))
+        # print('feature size: ', x.size())
+        return self.up(x)
+
 class ConvDown(nn.Module):
     def __init__(self, in_channels, out_channels, mid_channels, depth, use_bias = True):
         super(ConvDown, self).__init__()
@@ -102,10 +171,10 @@ class LocPredictor(nn.Module):
         return self.predictorx(code), self.predictory(code)
         
 if __name__ == '__main__':
-    mymodel = ConvDown(2, 1, 64, 6)
+    mymodel = MultiFilter(1, 1, 4, 5)
 
-    summary(mymodel, (2, 256, 512))
+    summary(mymodel, (1, 256, 512))
 
-    x = torch.rand(1, 2, 256, 512)
+    x = torch.rand(1, 1, 256, 512)
     y = mymodel(x)
-    print(y)
+    print(y.size())

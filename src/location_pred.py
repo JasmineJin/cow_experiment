@@ -130,13 +130,13 @@ if __name__ == '__main__':
     #########################################################################
     # set up training and validation dataloaders
     #########################################################################
-    net_input_name = 'log_partial_q1'# args.net_input_name
+    net_input_name = 'polar_partial2d_q1'# args.net_input_name
     target_name = ''# args.target_name
-    data_dir_train = os.path.join(*["cloud_data", "points", "train"])
+    data_dir_train = os.path.join(*["..", "cloud_data", "pre_processed_points", "train"])
     print('taking training data from directory:', data_dir_train)
     data_list_train = os.listdir(data_dir_train)
-    train_dataset = mydata.PointDataSet(data_dir_train, data_list_train[0: 1000], net_input_name, target_name, True)
-    train_dataloader = data.DataLoader(train_dataset, batch_size = 4, shuffle= False, num_workers= 1)
+    train_dataset = mydata.PointDataSet(data_dir_train, data_list_train[0: 100], net_input_name, target_name, True)
+    train_dataloader = data.DataLoader(train_dataset, batch_size = 8, shuffle= False, num_workers= 1)
 
     if True:#len(args.val_data_dir) == 0:
         val_dataloader = train_dataloader
@@ -169,7 +169,7 @@ if __name__ == '__main__':
     # set up summmary writer
     ##########################################################################
     #
-    writer_directory = os.path.join('runs', 'pred_location_1000x100_run0')
+    writer_directory = os.path.join('runs', 'polar_pred_location_1000x100_run0')
     writer = SummaryWriter(writer_directory)
 
     ##########################################################################

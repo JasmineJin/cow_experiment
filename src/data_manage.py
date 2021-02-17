@@ -18,6 +18,7 @@ class PointDataSet(data.Dataset):
         self.net_input_name = net_input_name
         self.target_name = target_name
         self.pre_processed = pre_processed
+        # self.things_to_include = things_to_include
     def __len__(self):
         
         return len(self.data_list)
@@ -44,9 +45,10 @@ class PointDataSet(data.Dataset):
 
         if self.net_input_name == 'log_partial' or self.net_input_name == 'log_partial_q1':
             partial0_np = processed['mag_partial0']
+            # print('min in partial0', np.min(np.min(partial0_np)))
             partial1_np = processed['mag_partial1']
             partial_np = np.dstack((partial0_np, partial1_np))
-            partial_np = 20 * np.log10(partial_np + 10 ** (-12))
+            partial_np = 20 * np.log10(partial_np + 10 **(-20))
             partial_np = partial_np.transpose(2, 0, 1)
             if self.net_input_name == 'log_partial_q1':
                 partial_np = partial_np > -20 
@@ -56,8 +58,6 @@ class PointDataSet(data.Dataset):
         elif self.net_input_name == 'polar_partial':
             polar_partial0_np = processed['polar_partial0']
             polar_partial1_np = processed['polar_partial1']
-            # polar_partial_np0 = np.hstack([polar_partial0_np.real, polar_partial0_np.imag])
-            # polar_partial_np1 = np.hstack([polar_partial1_np.real, polar_partial1_np.imag])
             polar_partial_np = np.block([[polar_partial0_np.real, polar_partial0_np.imag], [polar_partial1_np.real, polar_partial1_np.imag]])
             polar_partial_torch = torch.from_numpy(polar_partial_np).type(torch.float)
             mydata['polar_partial'] = polar_partial_torch
@@ -76,8 +76,9 @@ class PointDataSet(data.Dataset):
             polar_partial0_np = processed['polar_partial0']
             polar_partial1_np = processed['polar_partial1']
             polar_partial_np = np.dstack([np.abs(polar_partial0_np), np.abs(polar_partial1_np)])
+            polar_partial_np = np.log10(polar_partial_np + 10 ** (-12))
             polar_partial_np = polar_partial_np.transpose(2, 0, 1)
-            polar_partial_np = polar_partial_np > 0.5
+            # polar_partial_np = polar_partial_np > 0.5
             polar_partial_torch = torch.from_numpy(polar_partial_np).type(torch.float)
             mydata[self.net_input_name] = polar_partial_torch
 
@@ -128,7 +129,8 @@ class PointDataSet(data.Dataset):
             polar_full_np = processed['polar_full']
             polar_full_np = np.abs(polar_full_np)
             polar_full_np = polar_full_np[np.newaxis, :, :]
-            polar_full_np = polar_full_np > 1
+            polar_full_np = np.log10(polar_full_np + 10 **(-12))
+            # polar_full_np = polar_full_np > 1
             polar_full_torch = torch.from_numpy(polar_full_np).type(torch.float)
             mydata[self.target_name] = polar_full_torch
         elif self.target_name == 'full':
@@ -146,8 +148,30 @@ class PointDataSet(data.Dataset):
         
         return mydata
 
-# class ImageDataSet(data.Dataset):
-#     pass
+def norm01(data):
+    min_data = torch.min(data)
+    data = data - min_data
+    data = data / torch.max(data)
+    return data
+
+def quantizer(data, low, high, n_levels):
+    """
+    high = low + (n_levels - 1) * delta
+    delta = (high - low) / (n_levels - 1)
+    input: numpy array
+    output: integers in range[0, n_levels - 1]
+    """
+    data = data.clone()
+    data[data < low] = low
+    data[data > high] = high
+    delta = (high - low) / (n_levels - 1)
+    
+    data = np.floor((data - low) / delta)
+
+    return data
+
+def dequantizer(quantized_data, low, high, n_levels):
+    return quantized_data
 
 def display_data(target, output, net_input, target_name, net_input_name):
     target = target.cpu().detach()
@@ -298,9 +322,9 @@ def matplotlib_imshow(img, title = 'input'):
 
 if __name__ == '__main__':
     # import matplotlib.pyplot as plt
-    data_dir = os.path.join('../cloud_data', 'pre_processed_points', 'val')
-    net_input_name = 'partial' #'polar_partial2d'
-    target_name = 'log_q1' #'polar_full2d'
+    data_dir = os.path.join('cloud_data', 'two_points', 'val')
+    net_input_name = 'polar_partial2d_q1'
+    target_name = 'polar_full2d_q1'
     data_list = os.listdir(data_dir)
     # ################################################################################
     # # check data statistics
@@ -327,7 +351,7 @@ if __name__ == '__main__':
     ###############################################################################
     show_figs = True
     check_all = False
-    nums_examine = 10
+    nums_examine = 1
     nums_examined = 0
 
     mse = nn.MSELoss(reduction = 'sum')
@@ -356,6 +380,7 @@ if __name__ == '__main__':
         print(nums_examined)
         if show_figs:
             target = sample[target_name]
+            target = norm01(target)
             net_input = sample[net_input_name]
             # print(sample['x_points'])
             # print(sample['y_points'])

@@ -12,7 +12,7 @@
     "momentum": 0.5, 
     "num_epochs":     20,
     "model_name":    "single_point",
-    "net_type":     "unet2d",
+    "net_type":     "unet_custom",
     "in_channels":     2,
     "out_channels":    1,
     "mid_channels": 64,
