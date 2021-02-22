@@ -161,10 +161,11 @@ def quantizer(data, low, high, n_levels):
     input: numpy array
     output: integers in range[0, n_levels - 1]
     """
+    delta = (high - low) / (n_levels)
     data = data.clone()
     data[data < low] = low
-    data[data > high] = high
-    delta = (high - low) / (n_levels - 1)
+    data[data > low + (n_levels - 1) * delta] = low + (n_levels - 1) * delta
+    
     
     data = np.floor((data - low) / delta)
 

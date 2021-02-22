@@ -54,7 +54,7 @@ def reset_grad():
 
 
 G_solver = optim.RMSprop(A.parameters(), lr=0.001)
-D_solver = optim.RMSprop(D.parameters(), lr=lr)
+D_solver = optim.RMSprop(D.parameters(), lr=0.001)
 
 if __name__ == '__main__':
     data_dir = os.path.join('cloud_data', 'vline', 'val')
@@ -134,9 +134,9 @@ if __name__ == '__main__':
             X = sample[target_name]
             z = Variable(torch.randn(mb_size, 8, 8, 16))
 
-            # G_sample = A(X)# G(z)
+            X_fake = A(X)# G(z)
             # print(G_sample.size())
-            D_fake = D(A(X))
+            D_fake = D(X_fake)
             D_real = D(X)
 
             G_loss = torch.mean(D_real) - torch.mean(D_fake)#-torch.mean(D_fake)
@@ -174,9 +174,9 @@ if __name__ == '__main__':
                 .format(it, D_loss.data.numpy(), G_loss.data.numpy()))
 
             # samples = G(z).data.numpy()[:16]
-            G_np = G_sample.detach().numpy()
+            X_fake_np = X_fake.detach().numpy()
             plt.figure()
-            plt.imshow(G_np[0, 0, :, :], cmap = 'gray')
+            plt.imshow(X_fake_np[0, 0, :, :], cmap = 'gray')
             plt.title('output')
             plt.show()
             X_np = X.detach().numpy()

@@ -30,7 +30,7 @@ if __name__ == '__main__':
     device = torch.device('cpu')
     data_dir = os.path.join('cloud_data', 'vline', 'val')
     data_list = os.listdir(data_dir)[8:18]
-    model_path = 'vline_overfit_newmodel_small.pt'
+    model_path = 'vline_mini_newmodel_small.pt'
     # model_path = os.path.join('models_trained', 'point_model2d_final.pt')
     model = torch.load(model_path, map_location=device)
     model.to(device)

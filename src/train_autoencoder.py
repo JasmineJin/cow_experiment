@@ -100,7 +100,7 @@ if __name__ == '__main__':
     elif args.net_type == 'tinynet':
         model = models.MyModel(in_channels = args.in_channels, out_channels = args.out_channels, mid_channels = args.mid_channels, num_downs = args.depth, use_bias = args.use_bias)
     elif args.net_type == 'new_model':
-        model = newmodels.MultifilterSame(args.in_channels, args.mid_channels, args.out_channels, args.depth, args.use_bias, final_act)
+        model = newmodels.MultiFilter(args.in_channels, args.out_channels, args.mid_channels, args.depth, args.use_bias, final_act)
     else:
         print(args.net_type)
         raise NotImplementedError('model not implemented')
@@ -201,6 +201,7 @@ if __name__ == '__main__':
             target = sample[target_name]#[:, 0, :, :].unsqueeze(1)
             if args.norm:
                 target = mydata.norm01(target)
+                target = mydata.quantizer(target, 0, 1, 2 ** args.quantize)
             target = target.to(device)
             if args.train_auto:
                 net_input = target
@@ -208,6 +209,7 @@ if __name__ == '__main__':
                 net_input = sample[net_input_name]
                 if args.norm:
                     net_input = mydata.norm01(net_input)
+                    net_input = mydata.quantizer(net_input, 0, 1, 2 ** args.quantize)
             net_input = net_input.to(device)
             #forward
             myoutput = model(net_input)
@@ -224,15 +226,20 @@ if __name__ == '__main__':
                 print(num_train_samples, train_loss, flush = True)
 
         # go through validation data
+        model.eval()
         for batch_idx, sample in enumerate(val_dataloader):
             target = sample[target_name]#[:, 0, :, :].unsqueeze(1)
             if args.norm:
                 target = mydata.norm01(target)
+                target = mydata.quantizer(target, 0, 1, 2 ** args.quantize)
             # target = sample[target_name]
             if args.train_auto:
                 net_input = target
             else:
                 net_input = sample[net_input_name]
+                if args.norm:
+                    net_input = mydata.norm01(net_input)
+                    net_input = mydata.quantizer(net_input, 0, 1, 2** args.quantize)
             target = target.to(device)
             net_input = net_input.to(device)
             #forward
