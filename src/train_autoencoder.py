@@ -201,7 +201,7 @@ if __name__ == '__main__':
             target = sample[target_name]#[:, 0, :, :].unsqueeze(1)
             if args.norm:
                 target = mydata.norm01(target)
-                target = mydata.quantizer(target, 0, 1, 2 ** args.quantize)
+                # target = mydata.quantizer(target, 0, 1, 2 ** args.quantize)
             target = target.to(device)
             if args.train_auto:
                 net_input = target
@@ -209,7 +209,7 @@ if __name__ == '__main__':
                 net_input = sample[net_input_name]
                 if args.norm:
                     net_input = mydata.norm01(net_input)
-                    net_input = mydata.quantizer(net_input, 0, 1, 2 ** args.quantize)
+                    # net_input = mydata.quantizer(net_input, 0, 1, 2 ** args.quantize)
             net_input = net_input.to(device)
             #forward
             myoutput = model(net_input)
@@ -231,7 +231,7 @@ if __name__ == '__main__':
             target = sample[target_name]#[:, 0, :, :].unsqueeze(1)
             if args.norm:
                 target = mydata.norm01(target)
-                target = mydata.quantizer(target, 0, 1, 2 ** args.quantize)
+                # target = mydata.quantizer(target, 0, 1, 2 ** args.quantize)
             # target = sample[target_name]
             if args.train_auto:
                 net_input = target
@@ -239,7 +239,7 @@ if __name__ == '__main__':
                 net_input = sample[net_input_name]
                 if args.norm:
                     net_input = mydata.norm01(net_input)
-                    net_input = mydata.quantizer(net_input, 0, 1, 2** args.quantize)
+                    # net_input = mydata.quantizer(net_input, 0, 1, 2** args.quantize)
             target = target.to(device)
             net_input = net_input.to(device)
             #forward
