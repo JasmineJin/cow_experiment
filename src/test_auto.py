@@ -42,7 +42,7 @@ if __name__ == '__main__':
     # data_list = os.listdir(data_dir)
     # data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)
 # import matplotlib.pyplot as plt
-    data_dir = os.path.join('cloud_data', 'two_points', 'val')
+    data_dir = os.path.join('cloud_data', 'vline', 'test')
     net_input_name = 'polar_partial2d_q1'
     target_name = 'polar_full2d_q1'
     data_list = os.listdir(data_dir)[0:-1]

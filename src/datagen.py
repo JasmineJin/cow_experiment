@@ -92,7 +92,7 @@ def apply_threshold_per_row(matrix, dip1, dip_oeverall):
         thresholding_mtx[i, row < threshold_overall] = 0
     return thresholding_mtx
         
-def get_scene_raw_data(all_point_x, all_point_y, save_path = ''):
+def get_scene_raw_data(all_point_x, all_point_y):
     """
     given collection of points whose x coordinates are in all_point_x and y coordinates are in all_point_y,
     save the raw data to save_path if save path is not empty
@@ -107,11 +107,11 @@ def get_scene_raw_data(all_point_x, all_point_y, save_path = ''):
         point_y = all_point_y[i]
         radar_response += add_point(point_x, point_y)
 
-    if save_path != '':
-        np.savez_compressed(save_path, 
-                    raw_data = radar_response,
-                    x_points = all_point_x,
-                    y_points = all_point_y)
+    # if save_path != '':
+    #     np.savez_compressed(save_path, 
+    #                 raw_data = radar_response,
+    #                 x_points = all_point_x,
+    #                 y_points = all_point_y)
 
     return radar_response
 
@@ -143,17 +143,17 @@ def get_radar_image_pairs(radar_response):
     """
     radar_ra_plot = process_array(radar_response)
     rng_vector = np.arange(num_range_bins) * rng_res
-    # thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot)), 25, 25)
+    thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot)), 25, 25)
 
-    radar_ra_plot_thresholded = radar_ra_plot #* thresholding_mtx
+    radar_ra_plot_thresholded = radar_ra_plot * thresholding_mtx
     normal_plot_real, x, y = trans.polar_to_rect(np.real(radar_ra_plot_thresholded), wl, num_channels, rng_vector, 256, 512)
     normal_plot_imag, x, y = trans.polar_to_rect(np.imag(radar_ra_plot_thresholded), wl, num_channels, rng_vector, 256, 512)
     normal_plot = np.abs(normal_plot_real + 1j * normal_plot_imag)
     # normal_plot = np.log10(normal_plot + 10** (-12))
 
     radar_ra_plot_partial0 = process_array(radar_response[:, 0: num_samples])
-    # thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot_partial0)), 25, 25)
-    radar_ra_plot_partial0_thresholded = radar_ra_plot_partial0 #* thresholding_mtx
+    thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot_partial0)), 25, 25)
+    radar_ra_plot_partial0_thresholded = radar_ra_plot_partial0 * thresholding_mtx
 
     normal_plot_partial0_real, x, y = trans.polar_to_rect(np.real(radar_ra_plot_partial0_thresholded), wl, num_channels, rng_vector, 256, 512)
     normal_plot_partial0_imag, x, y = trans.polar_to_rect(np.imag(radar_ra_plot_partial0_thresholded), wl, num_channels, rng_vector, 256, 512)
@@ -161,8 +161,8 @@ def get_radar_image_pairs(radar_response):
     # normal_plot_partial0 = np.log10(normal_plot_partial0 + 10 ** (-12))
 
     radar_ra_plot_partial1 = process_array(radar_response[:, num_channels - num_samples : num_channels])
-    # thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot_partial1)), 25, 25)
-    radar_ra_plot_partial1_thresholded = radar_ra_plot_partial1 #* thresholding_mtx
+    thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot_partial1)), 25, 25)
+    radar_ra_plot_partial1_thresholded = radar_ra_plot_partial1 * thresholding_mtx
 
     normal_plot_partial1_real, x, y = trans.polar_to_rect(np.real(radar_ra_plot_partial1_thresholded), wl, num_channels, rng_vector, 256, 512)
     normal_plot_partial1_imag, x, y = trans.polar_to_rect(np.imag(radar_ra_plot_partial1_thresholded), wl, num_channels, rng_vector, 256, 512)
@@ -185,8 +185,12 @@ def get_radar_image_pairs(radar_response):
     return output
 
 def get_vline():
-    start_x = np.random.rand() * max_rng * 2 - max_rng
-    start_y = np.random.rand() * max_rng
+    start_x = np.random.randn() #+ max_rng- max_rng
+    if start_x > max_rng * 0.8:
+        start_x = max_rng * 0.8
+    if start_x < - max_rng * 0.8:
+        start_x = - max_rng * 0.8
+    start_y = np.min([np.random.randn() + max_rng/2, max_rng * 0.7])
     all_point_y = np.arange(50) * rng_res + start_y
     all_point_x = np.ones(all_point_y.shape) * start_x
     return all_point_x, all_point_y
@@ -199,8 +203,15 @@ def get_hline():
     return all_point_x, all_point_y
 
 def get_random_point(num_points):
-    all_ranges = np.random.rand(num_points) * max_rng * 0.8 + max_rng * 0.1
-    all_angles = np.random.rand(num_points) * np.pi
+    
+    all_ranges = np.random.randn(num_points)
+    all_ranges = all_ranges + max_rng / 2
+    all_ranges[all_ranges< max_rng * 0.2] = max_rng * 2
+    all_ranges[all_ranges > max_rng * 0.8] = max_rng * 0.8
+    #  * max_rng * 0.8 + max_rng * 0.1
+    all_angles = np.random.randn(num_points)
+    all_angles[all_angles > 0.8 * np.pi] = 0.8 * np.pi
+    all_angles[all_angles < - 0.8 * np.pi] = - 0.8 * np.pi# * np.pi
     all_point_x = all_ranges * np.cos(all_angles)
     all_point_y = all_ranges * np.sin(all_angles)
     return all_point_x, all_point_y
@@ -211,6 +222,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='set mode for data generation')
     parser.add_argument('--mode', type = str, default = 'val')
+    parser.add_argument('--sample_type',type = str, default = 'points' )
     parser.add_argument('--max_num_points', type = int, default = 1)
     parser.add_argument('--num_samples', type = int, default = 10)
     parser.add_argument('--sample_name', type = str, default = '')
@@ -224,11 +236,14 @@ if __name__ == '__main__':
     print(num_samples)
     pre_processed = True
 
-    data_dir = os.path.join('cloud_data', 'single_points', mode)
+    data_dir = os.path.join('cloud_data', args.sample_type, mode)
     os.makedirs(data_dir, exist_ok = True)
 
     for n in range(num_samples):
-        all_point_x, all_point_y = get_random_point(1)
+        if args.sample_type == 'points':
+            all_point_x, all_point_y = get_random_point(args.max_num_points)
+        elif args.sample_type == 'vline':
+            all_point_x, all_point_y = get_vline()
 
         scene_name = args.sample_name + '_' + str(n) + '.npz'
         save_path = os.path.join(data_dir, scene_name)

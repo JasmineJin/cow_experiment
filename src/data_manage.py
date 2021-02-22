@@ -322,9 +322,9 @@ def matplotlib_imshow(img, title = 'input'):
 
 if __name__ == '__main__':
     # import matplotlib.pyplot as plt
-    data_dir = os.path.join('cloud_data', 'two_points', 'val')
-    net_input_name = 'polar_partial2d_q1'
-    target_name = 'polar_full2d_q1'
+    data_dir = os.path.join('cloud_data', 'vline', 'test')
+    net_input_name = 'log_partial'
+    target_name = 'log_full'
     data_list = os.listdir(data_dir)
     # ################################################################################
     # # check data statistics
@@ -345,13 +345,13 @@ if __name__ == '__main__':
     # plt.title('raw data for at one time')
     # plt.show()
 
-    data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)
+    # data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)
     ###############################################################################
     # check and plot data from thing
     ###############################################################################
     show_figs = True
     check_all = False
-    nums_examine = 1
+    nums_examine = 10
     nums_examined = 0
 
     mse = nn.MSELoss(reduction = 'sum')
@@ -359,7 +359,13 @@ if __name__ == '__main__':
     mydataset = PointDataSet(data_dir, data_list, net_input_name, target_name, pre_processed = True)
     mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= False, num_workers= 4)
     
-    for batch_idx, sample in enumerate(mydataloader):
+    myiter = iter(mydataloader)
+    for i in range(nums_examine):
+        sample = myiter.next()
+
+        # print(thing)
+
+    # for batch_idx, sample in enumerate(mydataloader):
         for name in sample:
             print(name)
             thing = sample[name]
@@ -394,8 +400,8 @@ if __name__ == '__main__':
             # print(inputgrid.size())
             plt.show()
         
-        if nums_examined >= nums_examine:
-            break
+        # if nums_examined >= nums_examine:
+        #     break
 
         ##################################################################################
         # check the data process

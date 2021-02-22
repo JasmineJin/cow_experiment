@@ -100,7 +100,7 @@ if __name__ == '__main__':
     elif args.net_type == 'tinynet':
         model = models.MyModel(in_channels = args.in_channels, out_channels = args.out_channels, mid_channels = args.mid_channels, num_downs = args.depth, use_bias = args.use_bias)
     elif args.net_type == 'new_model':
-        model = newmodels.MultiFilter(args.in_channels, args.out_channels, args.mid_channels, args.depth, args.use_bias, final_act)
+        model = newmodels.MultifilterSame(args.in_channels, args.mid_channels, args.out_channels, args.depth, args.use_bias, final_act)
     else:
         print(args.net_type)
         raise NotImplementedError('model not implemented')
@@ -198,7 +198,7 @@ if __name__ == '__main__':
         # go through training data
         model.train()
         for batch_idx, sample in enumerate(train_dataloader):           
-            target = sample[net_input_name][:, 0, :, :].unsqueeze(1)
+            target = sample[target_name]#[:, 0, :, :].unsqueeze(1)
             if args.norm:
                 target = mydata.norm01(target)
             target = target.to(device)
@@ -223,7 +223,7 @@ if __name__ == '__main__':
 
         # go through validation data
         for batch_idx, sample in enumerate(val_dataloader):
-            target = sample[net_input_name][:, 0, :, :].unsqueeze(1)
+            target = sample[target_name]#[:, 0, :, :].unsqueeze(1)
             if args.norm:
                 target = mydata.norm01(target)
             # target = sample[target_name]
