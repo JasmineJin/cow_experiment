@@ -77,7 +77,7 @@ class MultifilterSame(nn.Module):
                             nn.ReLU(),
                             # nn.MaxPool2d(2),
                         )]
-        self.last_conv = nn.Sequential(nn.Conv2d(mid_channels * 2, out_channels, kernel_size = 5, dilation = 2, padding = 4, padding_mode = 'circular', bias = use_bias), 
+        self.last_conv = nn.Sequential(nn.Conv2d(mid_channels * 2, out_channels, kernel_size = 3, dilation = 1, padding = 1, padding_mode = 'circular', bias = use_bias), 
                             nn.BatchNorm2d(out_channels),
                             last_act(),
                             # nn.MaxPool2d(2),
@@ -235,10 +235,10 @@ class LocPredictor(nn.Module):
         return self.predictorx(code), self.predictory(code)
         
 if __name__ == '__main__':
-    mymodel = Critic(1, 4, 128)
-
-    summary(mymodel, (1, 256, 512))
+    # mymodel = Critic(1, 4, 128)
+    mymodel = MultiFilter(1, 1, 4, 4)
+    summary(mymodel.down, (1, 256, 512))
 
     x = torch.rand(1, 1, 256, 512)
-    y = mymodel(x)
+    y = mymodel.down(x)
     print(y.size())

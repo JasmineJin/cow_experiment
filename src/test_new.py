@@ -23,13 +23,14 @@ from torch.utils.tensorboard import SummaryWriter
 import matplotlib.pyplot as plt
 import datagen
 from numpy.fft import fft, ifft
+import newmodels
 
 if __name__ == '__main__':
     print('finished importing stuff')
     device = torch.device('cpu')
-    data_dir = os.path.join('..\cloud_data', 'pre_processed_points', 'val')
-    data_list = os.listdir(data_dir)[0: 10]
-    model_path = 'single_point_newmodel_mini.pt'
+    data_dir = os.path.join('cloud_data', 'vline', 'val')
+    data_list = os.listdir(data_dir)[8:18]
+    model_path = 'vline_overfit_newmodel_small.pt'
     # model_path = os.path.join('models_trained', 'point_model2d_final.pt')
     model = torch.load(model_path, map_location=device)
     model.to(device)
@@ -38,8 +39,8 @@ if __name__ == '__main__':
     # print(model)
 
     # data_dir = os.path.join('../cloud_data', 'points', 'train')
-    net_input_name = 'polar_partial2d_q1'
-    target_name = 'polar_full2d_q1'
+    net_input_name = 'log_partial'
+    target_name = 'log_full'
     # data_list = os.listdir(data_dir)
     # data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)
 
@@ -63,8 +64,10 @@ if __name__ == '__main__':
         if show_figs:
             print('showing ', sample['file_path'])
             target = sample[target_name]
+            target = mydata.norm01(target)
             target.to(device)
             net_input = sample[net_input_name]
+            net_input = mydata.norm01(net_input)
             net_input.to(device)
             net_output = model(net_input)
             # print(sample['x_points'])

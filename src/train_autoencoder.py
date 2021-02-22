@@ -206,6 +206,8 @@ if __name__ == '__main__':
                 net_input = target
             else:
                 net_input = sample[net_input_name]
+                if args.norm:
+                    net_input = mydata.norm01(net_input)
             net_input = net_input.to(device)
             #forward
             myoutput = model(net_input)
