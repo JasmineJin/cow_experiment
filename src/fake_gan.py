@@ -303,20 +303,20 @@ if __name__ == '__main__':
                 .format(e, D_train_loss, A_train_loss))
 
             if args.show_image:
-                for batch_idx, sample in enumerate(val_dataloader):
-                    # net_input = 
-                    if args.train_auto:
-                        net_input = sample[target_name]
-                    else:
-                        net_input = sample[net_input_name]
-                    if args.norm:
-                        net_input = mydata.norm01(net_input)
-                    net_input = target.to(device)
-                    fake_output = A(net_input)
-                    img_grid = mydata.get_output_target_image_grid(fake_output, target, target_name)
-                    writer.add_image('output and target pair after epoch ' + str(e), img_grid)
-                    # mydata.matplotlib_imshow(img_grid, 'output and target')
-                    print('showing ', sample['file_path'])
+                # for batch_idx, sample in enumerate(val_dataloader):
+                #     # net_input = 
+                #     if args.train_auto:
+                #         net_input = sample[target_name]
+                #     else:
+                #         net_input = sample[net_input_name]
+                #     if args.norm:
+                #         net_input = mydata.norm01(net_input)
+                #     net_input = target.to(device)
+                #     fake_output = A(net_input)
+                img_grid = mydata.get_output_target_image_grid(fake_output, target, target_name)
+                writer.add_image('output and target pair after epoch ' + str(e), img_grid)
+                # mydata.matplotlib_imshow(img_grid, 'output and target')
+                print('showing ', sample['file_path'])
                 # plt.show()
                 # mydata.display_data(target, myoutput, net_input, target_name, net_input_name)
 
