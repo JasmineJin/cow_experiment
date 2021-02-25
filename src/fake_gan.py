@@ -164,11 +164,12 @@ if __name__ == '__main__':
     ##########################################################################
     if args.optimizer_type == 'Adam':
         optimizerA = optim.Adam(A.parameters(), lr = args.learning_rateA)
-        optimizerD = optim.Adam(D.parameters(), lr = args.learning_rateB)
+        optimizerD = optim.Adam(D.parameters(), lr = args.learning_rateD)
     elif args.optimizer_type == 'sgd':
-        optimizerA = optim.SGD(A.parameters(), lr = args.learning_rate, momentum = args.momentum)
-        optimizerD = optim.SGD(D.parameters(), lr = args.learning_rate, momentum = args.momentum)
+        optimizerA = optim.SGD(A.parameters(), lr = args.learning_rateA, momentum = args.momentum)
+        optimizerD = optim.SGD(D.parameters(), lr = args.learning_rateD, momentum = args.momentum)
     else:
+        
         raise NotImplementedError('optimizer option not implemented')
 
     # ##########################################################################
