@@ -29,9 +29,9 @@
     "scheduler_gamma":     0.8,
     "reduction": "mean",
     "show_image": true,
-    "shuffle_data": true,
+    "shuffle_data": false,
     "pre_processed": true, 
-    "exp_name": "fakegan0",
+    "exp_name": "fakegan_new",
     "final_act": "sigmoid",
     "norm": true,
     "quantize": 8
