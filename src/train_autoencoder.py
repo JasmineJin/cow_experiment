@@ -270,8 +270,10 @@ if __name__ == '__main__':
         if e % print_every == 0:
             print(e, 'train loss', train_loss)
             print(e, 'val loss', val_loss)
+            torch.save(model, args.model_name + '_' + args.arg_file + '.pt')
             if args.show_image:
                 img_grid = mydata.get_output_target_image_grid(myoutput, target, target_name)
+                writer.add_image('output and target pair after epoch ' + str(e), img_grid)
                 mydata.matplotlib_imshow(img_grid, 'output and target')
                 print('showing ', sample['file_path'])
                 plt.show()
@@ -296,7 +298,7 @@ if __name__ == '__main__':
                     everything_is_good = False
             print('everything is good?', everything_is_good)
             curr_states = new_states
-
+            
     writer.close()
 
     ##############################################################################

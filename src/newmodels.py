@@ -51,7 +51,7 @@ class MultiFilterDown(nn.Module):
         #                     nn.MaxPool2d(2),
         #                 )
 class MultifilterSame(nn.Module):
-    def __init__(self, in_channels, mid_channels, out_channels, depth, use_bias = True, last_act = nn.Sigmoid):
+    def __init__(self, in_channels, mid_channels, out_channels, depth, use_bias = True, last_act = nn.Sigmoid, use_dropout = False):
         super(MultifilterSame, self).__init__()
 
         conv_3x3 = nn.Sequential(nn.Conv2d(in_channels, mid_channels, kernel_size = 3, dilation = 2, padding = 2, padding_mode = 'circular', bias = use_bias), 
@@ -77,11 +77,20 @@ class MultifilterSame(nn.Module):
                             nn.ReLU(),
                             # nn.MaxPool2d(2),
                         )]
-        self.last_conv = nn.Sequential(nn.Conv2d(mid_channels * 2, out_channels, kernel_size = 3, dilation = 1, padding = 1, padding_mode = 'circular', bias = use_bias), 
-                            nn.BatchNorm2d(out_channels),
-                            last_act(),
-                            # nn.MaxPool2d(2),
-                        )
+        if use_dropout:
+            self.last_conv = nn.Sequential(nn.Dropout(p = 0.2),
+                                nn.Conv2d(mid_channels * 2, out_channels, kernel_size = 3, dilation = 1, padding = 1, padding_mode = 'circular', bias = use_bias), 
+                                nn.BatchNorm2d(out_channels),
+                                last_act(),
+                                # nn.MaxPool2d(2),
+                            )
+        else:
+            self.last_conv = nn.Sequential(
+                                nn.Conv2d(mid_channels * 2, out_channels, kernel_size = 3, dilation = 1, padding = 1, padding_mode = 'circular', bias = use_bias), 
+                                nn.BatchNorm2d(out_channels),
+                                last_act(),
+                                # nn.MaxPool2d(2),
+                            )
         # last_act = nn.Sigmoid
         self.layer3x3 = nn.Sequential(*layer3x3)
         self.layer5x5 = nn.Sequential(*layer5x5)
@@ -132,10 +141,10 @@ class Critic(nn.Module):
     def __init__(self, in_channels, mid_channels, h_dim, use_bias = True, last_act = nn.ReLU, use_dropout = False):
         super(Critic, self).__init__()
         self.down = MultiFilterDown(in_channels, mid_channels, 3, use_bias)
-        self.up = nn.Sequential(nn.Linear(mid_channels* 2 * 16 * 32, h_dim),
+        self.up = nn.Sequential(nn.Linear(mid_channels* 2 * 16 * 32, h_dim, bias = use_bias),
                                 nn.LeakyReLU(0.1),
-                                nn.Linear(h_dim, 1),
-                                nn.Sigmoid())
+                                nn.Linear(h_dim, 1, bias = use_bias),
+                                nn.Tanh())
         # self.model = nn.Sequential(self.down, self.up)
     
     def forward(self, x):
