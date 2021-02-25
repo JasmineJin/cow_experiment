@@ -31,7 +31,7 @@
     "show_image": true,
     "shuffle_data": false,
     "pre_processed": true, 
-    "exp_name": "fakegan_new",
+    "exp_name": "fakegan_run1",
     "final_act": "sigmoid",
     "norm": true,
     "quantize": 8
