@@ -140,15 +140,15 @@ class MultiFilter(nn.Module):
 class Critic(nn.Module):
     def __init__(self, in_channels, mid_channels, h_dim, use_bias = True, last_act = nn.ReLU, use_dropout = False):
         super(Critic, self).__init__()
-        self.down = MultiFilterDown(in_channels, mid_channels, 3, use_bias)
-        self.up = nn.Sequential(nn.Linear(mid_channels* 2 * 16 * 32, h_dim, bias = use_bias),
+        # self.down = MultiFilterDown(in_channels, mid_channels, 3, use_bias)
+        self.up = nn.Sequential(nn.Linear(256 * 512, h_dim, bias = use_bias),
                                 nn.LeakyReLU(0.1),
                                 nn.Linear(h_dim, 1, bias = use_bias),
-                                nn.Tanh())
+        )
         # self.model = nn.Sequential(self.down, self.up)
     
     def forward(self, x):
-        x = self.down(x)
+        # x = self.down(x)
         # print(x.size())
         x = x.view(x.size(0), -1)
         # print('mean in features: ', torch.mean(torch.abs(x)))
