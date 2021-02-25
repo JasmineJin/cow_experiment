@@ -311,6 +311,7 @@ if __name__ == '__main__':
                         net_input = sample[net_input_name]
                     if args.norm:
                         net_input = mydata.norm01(net_input)
+                    net_input = target.to(device)
                     fake_output = A(net_input)
                     img_grid = mydata.get_output_target_image_grid(fake_output, target, target_name)
                     writer.add_image('output and target pair after epoch ' + str(e), img_grid)
