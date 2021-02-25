@@ -169,7 +169,7 @@ if __name__ == '__main__':
         optimizerA = optim.SGD(A.parameters(), lr = args.learning_rateA, momentum = args.momentum)
         optimizerD = optim.SGD(D.parameters(), lr = args.learning_rateD, momentum = args.momentum)
     else:
-        
+
         raise NotImplementedError('optimizer option not implemented')
 
     # ##########################################################################
@@ -255,8 +255,8 @@ if __name__ == '__main__':
             
 
             num_train_samples +=1
-            if num_train_samples % args.refresh_every == 0:
-                print(num_train_samples, train_loss, flush = True)
+            # if num_train_samples % args.refresh_every == 0:
+            #     print(num_train_samples, train_loss, flush = True)
 
         # # go through validation data
         # model.eval()
