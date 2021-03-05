@@ -29,8 +29,8 @@ if __name__ == '__main__':
     print('finished importing stuff')
     device = torch.device('cpu')
     data_dir = os.path.join('cloud_data', 'vline', 'val')
-    data_list = os.listdir(data_dir)[8:18]
-    model_path = 'vlineA_fakegan_mini.pt'
+    data_list = os.listdir(data_dir)[0:10]
+    model_path = 'vlineA_fakegan_test_new.pt'
     # model_path = os.path.join('models_trained', 'point_model2d_final.pt')
     model = torch.load(model_path, map_location=device)
     model.to(device)
@@ -50,7 +50,7 @@ if __name__ == '__main__':
 
     mse = nn.MSELoss(reduction = 'sum')
     # print('cool')
-    mydataset = mydata.PointDataSet(data_dir, data_list, net_input_name, target_name)
+    mydataset = mydata.PointDataSet(data_dir, data_list, net_input_name, target_name, pre_processed = True)
     mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= False, num_workers=1)
     print('cool')
 
@@ -74,7 +74,7 @@ if __name__ == '__main__':
             # print(sample['y_points'])
 
             # mydata.display_data(target, net_output, net_input, target_name, net_input_name)
-            # plt.figure()
+            plt.figure()
             inputgrid = mydata.get_input_image_grid(net_input, net_input_name)
             mydata.matplotlib_imshow(inputgrid, 'input')
             plt.figure()

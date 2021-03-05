@@ -144,6 +144,7 @@ class Critic(nn.Module):
         self.up = nn.Sequential(nn.Linear(256 * 512, h_dim, bias = use_bias),
                                 nn.LeakyReLU(0.1),
                                 nn.Linear(h_dim, 1, bias = use_bias),
+                                
         )
         # self.model = nn.Sequential(self.down, self.up)
     
@@ -154,6 +155,25 @@ class Critic(nn.Module):
         # print('mean in features: ', torch.mean(torch.abs(x)))
         # print('feature size: ', x.size())
         return self.up(x)
+
+class ADense(nn.Module):
+    def __init__(self, in_channels, mid_channels, h_dim, use_bias = True, last_act = nn.ReLU, use_dropout = False):
+        super(ADense, self).__init__()
+        # self.down = MultiFilterDown(in_channels, mid_channels, 3, use_bias)
+        self.up = nn.Sequential(nn.Linear(256 * 512* 2, h_dim, bias = use_bias),
+                                nn.LeakyReLU(0.1),
+                                nn.Linear(h_dim, 256 * 512, bias = use_bias),
+                                nn.Sigmoid()
+        )
+        # self.model = nn.Sequential(self.down, self.up)
+    
+    def forward(self, x):
+        # x = self.down(x)
+        # print(x.size())
+        x = x.view(x.size(0), -1)
+        # print('mean in features: ', torch.mean(torch.abs(x)))
+        # print('feature size: ', x.size())
+        return self.up(x).view(x.size(0), 1, 256, 512)
 
 class ConvDown(nn.Module):
     def __init__(self, in_channels, out_channels, mid_channels, depth, use_bias = True):

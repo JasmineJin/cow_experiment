@@ -205,14 +205,20 @@ if __name__ == '__main__':
                 target = mydata.norm01(target)
                 # target = mydata.quantizer(target, 0, 1, 2 ** args.quantize)
             target = target.to(device)
-            if args.train_auto:
-                net_input = target
-            else:
-                net_input = sample[net_input_name]
-                if args.norm:
-                    net_input = mydata.norm01(net_input)
+            # if args.train_auto:
+            #     net_input = target
+            # else:
+            net_input = sample[net_input_name]
+            if args.norm:
+                net_input = mydata.norm01(net_input)
                     # net_input = mydata.quantizer(net_input, 0, 1, 2 ** args.quantize)
             net_input = net_input.to(device)
+            # print(net_input_name)
+            inputgrid = mydata.get_input_image_grid(net_input, net_input_name)
+            # plt.figure()
+            # mydata.matplotlib_imshow(inputgrid, 'input')
+            # plt.show()
+
             #forward
             myoutput = model(net_input)
             loss = myloss(myoutput, target)
@@ -235,12 +241,12 @@ if __name__ == '__main__':
                 target = mydata.norm01(target)
                 # target = mydata.quantizer(target, 0, 1, 2 ** args.quantize)
             # target = sample[target_name]
-            if args.train_auto:
-                net_input = target
-            else:
-                net_input = sample[net_input_name]
-                if args.norm:
-                    net_input = mydata.norm01(net_input)
+            # if args.train_auto:
+            #     net_input = target
+        # else:
+            net_input = sample[net_input_name]
+            if args.norm:
+                net_input = mydata.norm01(net_input)
                     # net_input = mydata.quantizer(net_input, 0, 1, 2** args.quantize)
             target = target.to(device)
             net_input = net_input.to(device)
@@ -274,8 +280,12 @@ if __name__ == '__main__':
             if args.show_image:
                 img_grid = mydata.get_output_target_image_grid(myoutput, target, target_name)
                 writer.add_image('output and target pair after epoch ' + str(e), img_grid)
+                plt.figure()
                 mydata.matplotlib_imshow(img_grid, 'output and target')
                 print('showing ', sample['file_path'])
+                inputgrid = mydata.get_input_image_grid(net_input, net_input_name)
+                plt.figure()
+                mydata.matplotlib_imshow(inputgrid, 'input')
                 plt.show()
                 # mydata.display_data(target, myoutput, net_input, target_name, net_input_name)
 
