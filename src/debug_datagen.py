@@ -5,7 +5,7 @@ import numpy as np
 import os
 import torch.utils.data as data
 import matplotlib.pyplot as plt 
-import datagen
+import datagen_new as gen
 import image_transformation_utils as trans 
 import torchvision
 import torchvision.transforms as transforms
@@ -25,8 +25,15 @@ if __name__ == '__main__':
     x_points = processed_saved['all_point_x']
         # print(x_points)
     y_points = processed_saved['all_point_y']
-    raw_data = datagen.get_scene_raw_data(x_points, y_points)
-    processed_new = datagen.get_radar_image_pairs(raw_data)
+    raw_data = gen.get_scene_raw_data(x_points, y_points)
+    processed_new = gen.get_radar_image_pairs(raw_data)
+
+    raw_data_saved = processed_saved['raw_data']
+
+    raw_data_diff = np.abs(raw_data - raw_data_saved)
+    print('raw_data changed by: ', np.sum(np.sum(raw_data_diff)))
+
+    
 
     mag_partial0_saved = processed_saved['mag_partial0']
 
@@ -35,7 +42,7 @@ if __name__ == '__main__':
     diff = mag_partial0_saved - mag_partial0_new
 
     print(diff.shape)
-    print('total diff', np.sum(np.sum(np.abs(diff))))
+    print('total diff', np.mean(np.mean(np.abs(diff))))
 
 
     plt.figure()
