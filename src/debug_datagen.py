@@ -11,6 +11,7 @@ import torchvision
 import torchvision.transforms as transforms
 from PIL import Image
 
+
 if __name__ == '__main__':
     
     data_dir = os.path.join('cloud_data', 'vline', 'debug')
@@ -29,27 +30,42 @@ if __name__ == '__main__':
     processed_new = gen.get_radar_image_pairs(raw_data)
 
     raw_data_saved = processed_saved['raw_data']
-
+    
     raw_data_diff = np.abs(raw_data - raw_data_saved)
     print('raw_data changed by: ', np.sum(np.sum(raw_data_diff)))
 
-    
+    raw_data0 = raw_data[:, 0: gen.num_samples]
+    raw_data0_saved = raw_data_saved[:, 0: gen.num_samples]#
+    raw_data0_diff = np.abs(raw_data0 - raw_data0_saved)
+    print('raw_data0 changed by: ', np.mean(np.mean(raw_data0_diff)))
+    print('raw data new l1 norm: ', np.sum(np.sum(np.abs(raw_data0))))
+    print('raw data saved l1 norm: ', np.sum(np.sum(np.abs(raw_data0_saved))))
+    print('raw data saved shape: ', raw_data0_saved.shape)
 
-    mag_partial0_saved = processed_saved['mag_partial0']
+    polar0 = gen.process_array(raw_data0)
+    # threshold_mtx = gen.apply_threshold_per_row(20 * np.log10(polar0), 25, 25)
+    # polar0 = polar0 #* threshold_mtx
 
-    mag_partial0_new = processed_new['mag_partial0']
+    polar0_saved = processed_saved['polar_partial0']
+    polar0_diff = np.abs(polar0 - polar0_saved)
+    print('diff in polar0: ', np.mean(np.mean(polar0_diff)))
 
-    diff = mag_partial0_saved - mag_partial0_new
 
-    print(diff.shape)
-    print('total diff', np.mean(np.mean(np.abs(diff))))
+    # mag_full_saved = processed_saved['mag_full']
+
+    # # mag_full_new = processed_new['mag_full']
+
+    # diff = mag_full_saved - mag_full_new
+
+    # # print(diff.shape)
+    # print('diff in mag_full', np.mean(np.mean(np.abs(diff))))
 
 
     plt.figure()
-    plt.imshow(mag_partial0_saved)
-    plt.title('saved version')
-
-    plt.figure()
-    plt.imshow(mag_partial0_new)
+    plt.imshow(np.abs(polar0))
     plt.title('new version')
+
+    plt.figure()
+    plt.imshow(np.abs(polar0_saved))
+    plt.title('saved version')
     plt.show()

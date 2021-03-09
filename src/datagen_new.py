@@ -1,4 +1,4 @@
-import numpy as np
+# import numpy as np
 # import matplotlib
 import train
 import numpy as np
@@ -10,10 +10,10 @@ import image_transformation_utils as trans
 import copy
 ##############################################################################################
 # global constants
-num_range_bins = 256
-num_channels = 512
+num_range_bins = 512
+num_channels = 1024
 wl= (299.792458 / 77) * 0.001
-num_samples = 16
+num_samples = 12
 center_freq = 77 * 10 ** 9
 speed_of_light = 299792458
 bandwidth = 2 * 10 ** 9
@@ -141,7 +141,7 @@ def get_radar_image_pairs(radar_response):
     """
     given raw data, return pairs of high resolution and low resolution image
     """
-    radar_response_original = copy.deepcopy(radar_response)
+    # radar_response_original = copy.deepcopy(radar_response)
     radar_ra_plot = process_array(radar_response)
     rng_vector = np.arange(num_range_bins) * rng_res
     thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot)), 25, 25)
@@ -149,19 +149,22 @@ def get_radar_image_pairs(radar_response):
     # print("raw data changed by: ", np.mean(np.mean(np.abs(radar_response - radar_response_original))))
 
     radar_ra_plot_thresholded = radar_ra_plot * thresholding_mtx
-    normal_plot_real, x, y = trans.polar_to_rect(np.real(radar_ra_plot_thresholded), wl, num_channels, rng_vector, 256, 512)
-    normal_plot_imag, x, y = trans.polar_to_rect(np.imag(radar_ra_plot_thresholded), wl, num_channels, rng_vector, 256, 512)
+    normal_plot_real, x, y = trans.polar_to_rect(np.real(radar_ra_plot_thresholded), wl, num_channels, rng_vector, normal_h, normal_w)
+    normal_plot_imag, x, y = trans.polar_to_rect(np.imag(radar_ra_plot_thresholded), wl, num_channels, rng_vector, normal_h, normal_w)
     normal_plot = np.abs(normal_plot_real + 1j * normal_plot_imag)
     # normal_plot = np.log10(normal_plot + 10** (-12))
 
-    radar_ra_plot_partial0 = process_array(radar_response[:, 0: num_samples])
+    radar_response0 = radar_response[:, 0: num_samples]
+    # print('radar response0 shape: ', radar_response0.shape)
+    # print('num_samples: ', num_samples)
+    radar_ra_plot_partial0 = process_array(radar_response0)
     thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot_partial0)), 25, 25)
     # print('took away threshold here')
     radar_ra_plot_partial0_thresholded = radar_ra_plot_partial0 * thresholding_mtx
     # print("raw data changed by: ", np.mean(np.mean(np.abs(radar_response - radar_response_original))))
 
-    normal_plot_partial0_real, x, y = trans.polar_to_rect(np.real(radar_ra_plot_partial0_thresholded), wl, num_channels, rng_vector, 256, 512)
-    normal_plot_partial0_imag, x, y = trans.polar_to_rect(np.imag(radar_ra_plot_partial0_thresholded), wl, num_channels, rng_vector, 256, 512)
+    normal_plot_partial0_real, x, y = trans.polar_to_rect(np.real(radar_ra_plot_partial0_thresholded), wl, num_channels, rng_vector, normal_h, normal_w)
+    normal_plot_partial0_imag, x, y = trans.polar_to_rect(np.imag(radar_ra_plot_partial0_thresholded), wl, num_channels, rng_vector, normal_h, normal_w)
     normal_plot_partial0 = np.abs(normal_plot_partial0_real + 1j * normal_plot_partial0_imag)
     # normal_plot_partial0 = np.log10(normal_plot_partial0 + 10 ** (-12))
     
@@ -173,13 +176,14 @@ def get_radar_image_pairs(radar_response):
     
     radar_ra_plot_partial1_thresholded = radar_ra_plot_partial1 * thresholding_mtx
 
-    normal_plot_partial1_real, x, y = trans.polar_to_rect(np.real(radar_ra_plot_partial1_thresholded), wl, num_channels, rng_vector, 256, 512)
-    normal_plot_partial1_imag, x, y = trans.polar_to_rect(np.imag(radar_ra_plot_partial1_thresholded), wl, num_channels, rng_vector, 256, 512)
+    normal_plot_partial1_real, x, y = trans.polar_to_rect(np.real(radar_ra_plot_partial1_thresholded), wl, num_channels, rng_vector, normal_h, normal_w)
+    normal_plot_partial1_imag, x, y = trans.polar_to_rect(np.imag(radar_ra_plot_partial1_thresholded), wl, num_channels, rng_vector, normal_h, normal_w)
     normal_plot_partial1 = np.abs(normal_plot_partial1_real + 1j * normal_plot_partial1_imag)
     # normal_plot_partial1 = np.log10(normal_plot_partial1 + 10 ** (-12))
 
     output = {
                 'mag_full': normal_plot, 
+                # 'raw0': radar_response0,
                 'real_full': normal_plot_real,
                 'imag_full': normal_plot_imag,
                 'mag_partial0': normal_plot_partial0, 
@@ -194,16 +198,25 @@ def get_radar_image_pairs(radar_response):
     
     return output
 
-def get_vline():
-    start_x = np.random.randn() #+ max_rng- max_rng
+def get_vline(start_x, start_y, depth):
+    # start_x = np.random.randn() #+ max_rng- max_rng
     if start_x > max_rng * 0.8:
         start_x = max_rng * 0.8
     if start_x < - max_rng * 0.8:
         start_x = - max_rng * 0.8
-    start_y = np.min([np.random.randn() + max_rng/2, max_rng * 0.7])
-    all_point_y = np.arange(50) * rng_res + start_y
+    start_y = np.min([start_y, max_rng * 0.9 - depth * rng_res * 1.5])
+    all_point_y = np.arange(depth) * rng_res * 1.5 + start_y
     all_point_x = np.ones(all_point_y.shape) * start_x
     return all_point_x, all_point_y
+
+def get_cluster(center_x, center_y, cluster_size, spread_x, spread_y):
+    cluster_x = np.random.randn(cluster_size) * spread_x + center_x
+    cluster_y = np.random.randn(cluster_size) * spread_y + center_y
+    cluster_x[cluster_x > max_rng] = max_rng
+    cluster_x[cluster_x < - max_rng] = - max_rng
+    cluster_y[cluster_y > max_rng] = max_rng
+    cluster_y[cluster_y < max_rng * 0.2] = max_rng * 0.2
+    return cluster_x, cluster_y
 
 def get_hline():
     start_x = np.random.rand() * max_rng * 2 - max_rng
@@ -231,38 +244,69 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(description='set mode for data generation')
-    parser.add_argument('--mode', type = str, default = 'val')
-    parser.add_argument('--sample_type',type = str, default = 'points' )
+    parser.add_argument('--mode', type = str, default = 'debug')
+    parser.add_argument('--sample_type',type = str, default = 'vline' )
     parser.add_argument('--max_num_points', type = int, default = 1)
-    parser.add_argument('--num_samples', type = int, default = 1)
+    parser.add_argument('--num_scenes', type = int, default = 1)
     parser.add_argument('--sample_name', type = str, default = '')
+    parser.add_argument('--distribution', type = str, default = 'uniform')
     args = parser.parse_args()
 
     mode = args.mode
     max_num_points = args.max_num_points
-    num_samples = args.num_samples
+    num_scenes = args.num_scenes
     print(mode)
-    print(max_num_points)
-    print(num_samples)
+    # print(max_num_points)
+    # print(num_samples)
     pre_processed = True
 
     data_dir = os.path.join('cloud_data', args.sample_type, mode)
     os.makedirs(data_dir, exist_ok = True)
 
-    for n in range(num_samples):
-        if args.sample_type == 'points':
-            all_point_x, all_point_y = get_random_point(args.max_num_points)
-        elif args.sample_type == 'vline':
-            all_point_x, all_point_y = get_vline()
+    for n in range(num_scenes):
+        all_point_x = []
+        all_point_y = []
+        num_objects = np.random.randint(args.max_num_points)
+        for i in range(num_objects):
+            if args.sample_type == 'points':
+                point_x, point_y = get_random_point(args.max_num_points)
+                # all_point_x = np.hstack([all_point_x, point_x])
+                # all_point_y = np.hstack([all_point_y, point_y])
+            elif args.sample_type == 'vline':
+                start_x = np.random.rand() * 2 * max_rng - max_rng
+                start_y = np.random.rand() * max_rng
+                point_x, point_y = get_vline(start_x, start_y, 50)
+                # all_point_x = np.hstack([all_point_x, point_x])
+                # all_point_y = np.hstack([all_point_y, point_y])
+            elif args.sample_type == 'cluster':
+                start_x = start_x = np.random.rand() * 2 * max_rng - max_rng
+                start_y = np.random.rand() * max_rng
+                spread_x = np.random.rand() * 3 + 0.5
+                spread_y = np.random.rand() * 3 + 0.5
+                cluster_size = 100
+                point_x, point_y = get_cluster(start_x, start_y, cluster_size, spread_x, spread_y)
+                
+            elif args.sample_type == 'mix':
+                start_x = np.random.rand() * 2 * max_rng - max_rng
+                start_y = np.random.rand() * max_rng
+                depth = np.random.randint(10, 200)
+                point_x, point_y = get_vline(start_x, start_y, 50)
+
+            all_point_x = np.hstack([all_point_x, point_x])
+            all_point_y = np.hstack([all_point_y, point_y])
 
         scene_name = args.sample_name + '_' + str(n) + '.npz'
         save_path = os.path.join(data_dir, scene_name)
         if pre_processed:
             raw_data = get_scene_raw_data(all_point_x, all_point_y)
             processed = get_radar_image_pairs(raw_data)
+            # raw_data0 = processed['raw0']
+            # print('raw data0 shape: ', raw_data0.shape)
+            # print()
             np.savez(save_path, all_point_x = all_point_x, 
                     all_point_y = all_point_y,
-                    raw_data = raw_data,
+                    # raw_data = raw_data,
+                    # raw_data0 = processed['raw0'],
                     mag_full = processed['mag_full'], 
                     real_full = processed['real_full'],
                     imag_full = processed['imag_full'],

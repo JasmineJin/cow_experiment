@@ -5,7 +5,7 @@ import numpy as np
 import os
 import torch.utils.data as data
 import matplotlib.pyplot as plt 
-import datagen
+import datagen_new as gen
 import image_transformation_utils as trans 
 import torchvision
 import torchvision.transforms as transforms
@@ -40,8 +40,8 @@ class PointDataSet(data.Dataset):
             # raw_data = datagen.get_scene_raw_data(x_points, y_points)
             processed = npzfile
         else:
-            raw_data = datagen.get_scene_raw_data(x_points, y_points)
-            processed = datagen.get_radar_image_pairs(raw_data)
+            raw_data = gen.get_scene_raw_data(x_points, y_points)
+            processed = gen.get_radar_image_pairs(raw_data)
 
         if self.net_input_name == 'log_partial': #or self.net_input_name == 'log_partial_q1':
             partial0_np = processed['mag_partial0']
@@ -235,7 +235,7 @@ def display_data(target, output, net_input, target_name, net_input_name):
     # output_tensor = transforms.ToTensor()(output_np).unsqueeze(0).unsqueeze(0)
     # input0_tensor = transforms.ToTensor()(input0).unsqueeze(0).unsqueeze(0)
     # input1_tensor = transforms.ToTensor()(input1).unsqueeze(0).unsqueeze(0)
-    extent = [-datagen.max_rng, datagen.max_rng, 0, datagen.max_rng]
+    extent = [-gen.max_rng, gen.max_rng, 0, gen.max_rng]
 
     fig, axs = plt.subplots(2, 2)
     axs[0, 0].imshow(target_np,  extent = extent, origin= 'lower')
@@ -323,8 +323,8 @@ def matplotlib_imshow(img, title = 'input'):
 
 if __name__ == '__main__':
     # import matplotlib.pyplot as plt
-    data_dir = os.path.join('cloud_data', 'vline', 'val')
-    net_input_name = 'polar_partial2d_q1'
+    data_dir = os.path.join('cloud_data', 'cluster', 'debug')
+    net_input_name = 'log_partial'
     target_name = 'log_full'
     data_list = os.listdir(data_dir)
     # ################################################################################
@@ -396,9 +396,9 @@ if __name__ == '__main__':
             plt.figure()
             inputgrid = get_input_image_grid(net_input, net_input_name)
             matplotlib_imshow(inputgrid, 'input')
-            # plt.figure()
-            # img_grid = get_output_target_image_grid(target, target, target_name)
-            # matplotlib_imshow(img_grid, 'target')
+            plt.figure()
+            img_grid = get_output_target_image_grid(target, target, target_name)
+            matplotlib_imshow(img_grid, 'target')
             # print(inputgrid.size())
             plt.show()
         
