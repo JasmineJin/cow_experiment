@@ -102,7 +102,7 @@ if __name__ == '__main__':
     elif args.net_type == 'new_model':
         model = newmodels.MultiFilter(args.in_channels, args.out_channels, args.mid_channels, args.depth, args.use_bias, final_act)
     elif args.net_type == 'cnn':
-        model = newmodels.MultifilterSame(args.in_channels, args.mid_channels, args.out_channels, args.depth, args.use_bias, final_act)
+        model = newmodels.MultifilterSame(args.in_channels, args.mid_channels, args.out_channels, args.depth, args.use_bias, final_act, use_dropout = True)
     else:
         print(args.net_type)
         raise NotImplementedError('model not implemented')
