@@ -283,8 +283,8 @@ if __name__ == '__main__':
                 start_y = np.random.rand() * max_rng
                 spread_x = np.random.rand() * 3 + 0.5
                 spread_y = np.random.rand() * 3 + 0.5
-                print(spread_x)
-                print(spread_y)
+                # print(spread_x)
+                # print(spread_y)
                 cluster_size = np.random.randint(100, 200)
                 point_x, point_y = get_cluster(start_x, start_y, cluster_size, spread_x, spread_y)
                 
