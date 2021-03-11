@@ -19,8 +19,8 @@ speed_of_light = 299792458
 bandwidth = 2 * 10 ** 9
 max_velocity = 20
 
-normal_h = 256
-normal_w = 512
+normal_h = 512
+normal_w = 1024
 
 cycle_length = wl /  (4 * max_velocity) # Vmax = lambda/(4 * Tc)
 rng_res = speed_of_light / (2 * bandwidth)
@@ -144,7 +144,7 @@ def get_radar_image_pairs(radar_response):
     # radar_response_original = copy.deepcopy(radar_response)
     radar_ra_plot = process_array(radar_response)
     rng_vector = np.arange(num_range_bins) * rng_res
-    thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot)), 25, 25)
+    thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot) + 10** (-20)), 25, 25)
 
     # print("raw data changed by: ", np.mean(np.mean(np.abs(radar_response - radar_response_original))))
 
@@ -158,7 +158,7 @@ def get_radar_image_pairs(radar_response):
     # print('radar response0 shape: ', radar_response0.shape)
     # print('num_samples: ', num_samples)
     radar_ra_plot_partial0 = process_array(radar_response0)
-    thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot_partial0)), 25, 25)
+    thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot_partial0) + 10** (-20)), 25, 25)
     # print('took away threshold here')
     radar_ra_plot_partial0_thresholded = radar_ra_plot_partial0 * thresholding_mtx
     # print("raw data changed by: ", np.mean(np.mean(np.abs(radar_response - radar_response_original))))
@@ -172,7 +172,7 @@ def get_radar_image_pairs(radar_response):
 
     radar_ra_plot_partial1 = process_array(radar_response[:, num_channels - num_samples : num_channels])
     # print("raw data changed by: ", np.mean(np.mean(np.abs(radar_response - radar_response_original))))
-    thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot_partial1)), 25, 25)
+    thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot_partial1) + 10** (-20)), 25, 25)
     
     radar_ra_plot_partial1_thresholded = radar_ra_plot_partial1 * thresholding_mtx
 
@@ -266,7 +266,7 @@ if __name__ == '__main__':
     for n in range(num_scenes):
         all_point_x = []
         all_point_y = []
-        num_objects = np.random.randint(args.max_num_points)
+        num_objects = np.random.randint(1, args.max_num_points)
         for i in range(num_objects):
             if args.sample_type == 'points':
                 point_x, point_y = get_random_point(args.max_num_points)
@@ -283,7 +283,9 @@ if __name__ == '__main__':
                 start_y = np.random.rand() * max_rng
                 spread_x = np.random.rand() * 3 + 0.5
                 spread_y = np.random.rand() * 3 + 0.5
-                cluster_size = 100
+                print(spread_x)
+                print(spread_y)
+                cluster_size = np.random.randint(100, 200)
                 point_x, point_y = get_cluster(start_x, start_y, cluster_size, spread_x, spread_y)
                 
             elif args.sample_type == 'mix':

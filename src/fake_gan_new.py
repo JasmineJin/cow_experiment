@@ -38,20 +38,22 @@ if __name__ == '__main__':
 # Order of things:
 # check device
 # parse arguments
-# set up model
-# define loss function
+# set up G model
+# set up D model
+# define loss functions
 # set up training and validation dataloaders
-# set up optimizer
-# set up scheduler
+# set up optimizers
+# set up scheduler (nope)
 # set up summary writer
 # other training configs
 # training loop
+# -- alternate between training D and trainging G
 # -- go through training set
 # -- go through validation set
 # -- log data into writer
 # -- print stuff
 # -- check model updates
-# save model
+# save models
 ##############################################################################
 
     ##########################################################################
@@ -102,7 +104,7 @@ if __name__ == '__main__':
     #     model = models.MyModel(in_channels = args.in_channels, out_channels = args.out_channels, mid_channels = args.mid_channels, num_downs = args.depth, use_bias = args.use_bias)
     # elif args.net_type == 'new_model':
     A = newmodels.MultiFilter(args.in_channels, args.out_channels, args.mid_channels, args.depth, args.use_bias, final_act)
-    D = newmodels.Critic(1, 4, 1024, use_bias = args.use_bias)
+    D = newmodels.Critic(args.out_channels * 2, args.mid_channels, 512, use_bias = args.use_bias)
     # elif args.net_type == 'cnn':
     #     model = newmodels.MultifilterSame(args.in_channels, args.mid_channels, args.out_channels, args.depth, args.use_bias, final_act)
     # else:
@@ -114,29 +116,14 @@ if __name__ == '__main__':
     print('created model: ')
     # print(model)
 
-    # #########################################################################
-    # # define loss function 
-    # #########################################################################
-    # if args.loss_type == 'mse':
-    #     myloss = nn.MSELoss(reduction = args.reduction)
-    # elif args.loss_type == 'log_mse':
-    #     mse = nn.MSELoss(reduction = args.reduction)
-    #     def myloss(output, target):
-    #         return torch.log10(mse(output, target)) #+ 0.0001 * torch.sum(torch.abs(output))
-    # elif args.loss_type == 'log_bce':
-    #     bce = nn.BCELoss(reduction = args.reduction)
-    #     def myloss(output, target):
-    #         return torch.log10(bce(output, target))
-    # elif args.loss_type == 'log_ratio':
-    #     def myloss(output, target):
-    #         return torch.sum(torch.abs(torch.log10(target / output + 10 **(-12))))
-    # elif args.loss_type == 'l1':
-    #     def myloss(output, target):
-    #         return torch.mean(torch.abs(output - target))
-    # elif args.loss_type == "bce":
-    #     myloss = nn.BCELoss(reduction = args.reduction)
-    # else:
-    #     raise NotImplementedError('loss function not implemented')
+    #########################################################################
+    # define loss function 
+    #########################################################################
+    lambda1 = args.lambda1
+    mse = nn.MSELoss()
+    l1_loss = nn.L1Loss()
+    bce = nn.BCELoss()
+
     
     #########################################################################
     # set up training and validation dataloaders
@@ -147,7 +134,7 @@ if __name__ == '__main__':
     print('taking training data from directory:', data_dir_train)
     data_list_train = os.listdir(data_dir_train)
     train_dataset = mydata.PointDataSet(data_dir_train, data_list_train[0: args.num_train], net_input_name, target_name, args.pre_processed)
-    train_dataloader = data.DataLoader(train_dataset, batch_size = 1, shuffle= args.shuffle_data, num_workers= 1)
+    train_dataloader = data.DataLoader(train_dataset, batch_size = args.train_batch_size, shuffle= args.shuffle_data, num_workers= 1)
 
     if len(args.val_data_dir) == 0:
         val_dataloader = train_dataloader
@@ -163,8 +150,8 @@ if __name__ == '__main__':
     # set up optimizer
     ##########################################################################
     if args.optimizer_type == 'Adam':
-        optimizerA = optim.Adam(A.parameters(), lr = args.learning_rateA)
-        optimizerD = optim.Adam(D.parameters(), lr = args.learning_rateD)
+        optimizerA = optim.Adam(A.parameters(), lr = args.learning_rateA, betas = (args.momentum, 0.999))
+        optimizerD = optim.Adam(D.parameters(), lr = args.learning_rateD, betas = (args.momentum, 0.999))
     elif args.optimizer_type == 'sgd':
         optimizerA = optim.SGD(A.parameters(), lr = args.learning_rateA, momentum = args.momentum)
         optimizerD = optim.SGD(D.parameters(), lr = args.learning_rateD, momentum = args.momentum)
@@ -205,41 +192,44 @@ if __name__ == '__main__':
         A_val_loss = 0
         num_train_samples = 1
         num_val_samples = 1
-        # go through training data
-        # # train D first 
-        # D.train()
-        # A.eval() 
-        # for e_d in range(10):
-        #     for batch_idx, sample in enumerate(train_dataloader):
-                        
-        #         target = sample[target_name]#[:, 0, :, :].unsqueeze(1)
-        #         if args.norm:
-        #             target = mydata.norm01(target)
-        #             # target = mydata.quantizer(target, 0, 1, 2 ** args.quantize)
-        #         target = target.to(device)
-        #         if args.train_auto:
-        #             net_input = target
-        #         else:
-        #             net_input = sample[net_input_name]
-        #             if args.norm:
-        #                 net_input = mydata.norm01(net_input)
-        #                 # net_input = mydata.quantizer(net_input, 0, 1, 2 ** args.quantize)
-        #         net_input = net_input.to(device)
-                
-        #         #forward
-        #         fake_output = A(net_input)
-        #         D_loss = - (torch.mean(D(target) - D(fake_output)))
-        #         # loss = myloss(myoutput, target)
-        #         # backward
-        #         optimizerA.zero_grad()
-        #         optimizerD.zero_grad()
-        #         D_loss.backward()
-        #         # update
-        #         optimizerD.step()
-        #         # update epoch loss
-        #         D_train_loss = D_loss.item()# - D_train_loss) / num_train_samples
 
-        # train A next
+        D.train()
+        A.eval()
+        for _ in range(5):
+            for batch_idx, sample in enumerate(train_dataloader):        
+                target = sample[target_name]#[:, 0, :, :].unsqueeze(1)
+                if args.norm:
+                    target = mydata.norm01(target)
+                    # target = mydata.quantizer(target, 0, 1, 2 ** args.quantize)
+                target = target.to(device)
+                # if args.train_auto:
+                #     net_input = target
+                # else:
+                net_input = sample[net_input_name]
+                if args.norm:
+                    net_input = mydata.norm01(net_input)
+                        # net_input = mydata.quantizer(net_input, 0, 1, 2 ** args.quantize)
+                net_input = net_input.to(device)
+                
+                #forward
+                fake_output = A(net_input)
+                fake_together = torch.cat([fake_output, target], 1)
+                score_fake = D(fake_together.detach())
+                real_together = torch.cat([target, target], 1)
+                score_real = D(fake_together.detach())
+                D_loss = 0.5 * bce(score_fake, torch.zeros(score_fake.size())) + 0.5 + bce(score_real, torch.ones(score_real.size()))
+                # print('D_loss: ', D_loss)
+                # A_loss = nn.BCELoss()(fake_output, target)
+                # A_loss = (torch.mean(D(target) - D(fake_output)))#- (torch.mean(D(target)) - torch.mean(D(fake_output)))
+                # loss = myloss(myoutput, target)
+                # backward
+                optimizerA.zero_grad()
+                optimizerD.zero_grad()
+                D_loss.backward()
+                # update
+                optimizerD.step()
+                # update epoch loss
+        D_train_loss = D_loss.item()
         A.train()
         D.eval()
         for batch_idx, sample in enumerate(train_dataloader):        
@@ -248,18 +238,22 @@ if __name__ == '__main__':
                 target = mydata.norm01(target)
                 # target = mydata.quantizer(target, 0, 1, 2 ** args.quantize)
             target = target.to(device)
-            if args.train_auto:
-                net_input = target
-            else:
-                net_input = sample[net_input_name]
-                if args.norm:
-                    net_input = mydata.norm01(net_input)
+            # if args.train_auto:
+            #     net_input = target
+            # else:
+            net_input = sample[net_input_name]
+            if args.norm:
+                net_input = mydata.norm01(net_input)
                     # net_input = mydata.quantizer(net_input, 0, 1, 2 ** args.quantize)
             net_input = net_input.to(device)
             
             #forward
             fake_output = A(net_input)
-            A_loss = nn.BCELoss()(fake_output, target)
+            fake_together = torch.cat([fake_output, target], 1)
+            fake_score = D(fake_together)
+            A_loss = lambda1 * bce(fake_output, target) + bce(fake_score, torch.ones(fake_score.size()))
+            
+            # A_loss = nn.BCELoss()(fake_output, target)
             # A_loss = (torch.mean(D(target) - D(fake_output)))#- (torch.mean(D(target)) - torch.mean(D(fake_output)))
             # loss = myloss(myoutput, target)
             # backward
@@ -268,8 +262,9 @@ if __name__ == '__main__':
             A_loss.backward()
             # update
             optimizerA.step()
+            # print('A loss:', A_loss)
             # update epoch loss
-            A_train_loss = A_loss.item()#+= (D_loss.item() - D_train_loss) / num_train_samples
+        A_train_loss = A_loss.item()#+= (D_loss.item() - D_train_loss) / num_train_samples
         # # go through validation data
         # model.eval()
         # for batch_idx, sample in enumerate(val_dataloader):

@@ -33,8 +33,8 @@ class PointDataSet(data.Dataset):
         x_points = npzfile['all_point_x']
         # print(x_points)
         y_points = npzfile['all_point_y']
-        mydata['x_points'] = torch.from_numpy(x_points).type(torch.float)
-        mydata['y_points'] = torch.from_numpy(y_points).type(torch.float)
+        # mydata['x_points'] = torch.from_numpy(x_points).type(torch.float)
+        # mydata['y_points'] = torch.from_numpy(y_points).type(torch.float)
 
         if self.pre_processed:
             # raw_data = datagen.get_scene_raw_data(x_points, y_points)

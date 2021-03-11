@@ -140,16 +140,17 @@ class MultiFilter(nn.Module):
 class Critic(nn.Module):
     def __init__(self, in_channels, mid_channels, h_dim, use_bias = True, last_act = nn.ReLU, use_dropout = False):
         super(Critic, self).__init__()
-        # self.down = MultiFilterDown(in_channels, mid_channels, 3, use_bias)
-        self.up = nn.Sequential(nn.Linear(256 * 512, h_dim, bias = use_bias),
+        self.down = MultiFilterDown(in_channels, mid_channels, 6, use_bias)
+        self.up = nn.Sequential(nn.Linear(4 * 8 * 2 * mid_channels, h_dim, bias = use_bias),
                                 nn.LeakyReLU(0.1),
                                 nn.Linear(h_dim, 1, bias = use_bias),
+                                nn.Sigmoid()
                                 
         )
         # self.model = nn.Sequential(self.down, self.up)
     
     def forward(self, x):
-        # x = self.down(x)
+        x = self.down(x)
         # print(x.size())
         x = x.view(x.size(0), -1)
         # print('mean in features: ', torch.mean(torch.abs(x)))
@@ -249,7 +250,7 @@ class DenseConv(nn.Module):
 class LocPredictor(nn.Module):
     def __init__(self):
         super(LocPredictor, self).__init__()
-        self.encoder = ConvDown(2, 2, 64, 6)
+        self.encoder = ConvDown(2, 2, 64, 4)
         self.predictorx = nn.Sequential(
                                      nn.Linear(64, 16),
                                     nn.Tanh(),
@@ -265,9 +266,9 @@ class LocPredictor(nn.Module):
         
 if __name__ == '__main__':
     # mymodel = Critic(1, 4, 128)
-    mymodel = MultiFilter(1, 1, 4, 4)
-    summary(mymodel.down, (1, 256, 512))
+    mymodel = MultiFilter(1, 1, 64, 6)
+    summary(mymodel.down, (1, 512, 1024))
 
-    x = torch.rand(1, 1, 256, 512)
+    x = torch.rand(1, 1, 512, 1024)
     y = mymodel.down(x)
     print(y.size())
