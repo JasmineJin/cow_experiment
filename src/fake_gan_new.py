@@ -103,7 +103,8 @@ if __name__ == '__main__':
     # elif args.net_type == 'tinynet':
     #     model = models.MyModel(in_channels = args.in_channels, out_channels = args.out_channels, mid_channels = args.mid_channels, num_downs = args.depth, use_bias = args.use_bias)
     # elif args.net_type == 'new_model':
-    A = newmodels.MultiFilter(args.in_channels, args.out_channels, args.mid_channels, args.depth, args.use_bias, final_act)
+    # A = newmodels.MultiFilter(args.in_channels, args.out_channels, args.mid_channels, args.depth, args.use_bias, final_act)
+    A = newmodels.MultifilterSame(args.in_channels, args.mid_channels, args.out_channels, args.depth, args.use_bias, final_act, use_dropout = True)
     D = newmodels.Critic(args.out_channels * 2, args.mid_channels, 512, use_bias = args.use_bias)
     # elif args.net_type == 'cnn':
     #     model = newmodels.MultifilterSame(args.in_channels, args.mid_channels, args.out_channels, args.depth, args.use_bias, final_act)
@@ -178,7 +179,7 @@ if __name__ == '__main__':
     print_every = args.print_every
     check_every = args.check_every
     log_every = args.log_every
-
+    thing_to_train_list = ['D', 'D', 'D', 'D', 'D', 'A', 'E']
     #########################################################################
     # training loop
     #########################################################################
@@ -190,12 +191,12 @@ if __name__ == '__main__':
         D_val_loss = 0
         A_train_loss = 0
         A_val_loss = 0
-        num_train_samples = 1
-        num_val_samples = 1
+        num_D_samples = 1
+        num_A_samples = 1
 
-        D.train()
-        A.eval()
-        for _ in range(5):
+        # D.train()
+        # A.eval()
+        for thing_to_train in thing_to_train_list:
             for batch_idx, sample in enumerate(train_dataloader):        
                 target = sample[target_name]#[:, 0, :, :].unsqueeze(1)
                 if args.norm:
@@ -211,85 +212,46 @@ if __name__ == '__main__':
                         # net_input = mydata.quantizer(net_input, 0, 1, 2 ** args.quantize)
                 net_input = net_input.to(device)
                 
-                #forward
-                fake_output = A(net_input)
-                fake_together = torch.cat([fake_output, target], 1)
-                score_fake = D(fake_together.detach())
-                real_together = torch.cat([target, target], 1)
-                score_real = D(fake_together.detach())
-                D_loss = 0.5 * bce(score_fake, torch.zeros(score_fake.size())) + 0.5 + bce(score_real, torch.ones(score_real.size()))
-                # print('D_loss: ', D_loss)
-                # A_loss = nn.BCELoss()(fake_output, target)
-                # A_loss = (torch.mean(D(target) - D(fake_output)))#- (torch.mean(D(target)) - torch.mean(D(fake_output)))
-                # loss = myloss(myoutput, target)
-                # backward
-                optimizerA.zero_grad()
-                optimizerD.zero_grad()
-                D_loss.backward()
-                # update
-                optimizerD.step()
-                # update epoch loss
-        D_train_loss = D_loss.item()
-        A.train()
-        D.eval()
-        for batch_idx, sample in enumerate(train_dataloader):        
-            target = sample[target_name]#[:, 0, :, :].unsqueeze(1)
-            if args.norm:
-                target = mydata.norm01(target)
-                # target = mydata.quantizer(target, 0, 1, 2 ** args.quantize)
-            target = target.to(device)
-            # if args.train_auto:
-            #     net_input = target
-            # else:
-            net_input = sample[net_input_name]
-            if args.norm:
-                net_input = mydata.norm01(net_input)
-                    # net_input = mydata.quantizer(net_input, 0, 1, 2 ** args.quantize)
-            net_input = net_input.to(device)
-            
-            #forward
-            fake_output = A(net_input)
-            fake_together = torch.cat([fake_output, target], 1)
-            fake_score = D(fake_together)
-            A_loss = lambda1 * bce(fake_output, target) + bce(fake_score, torch.ones(fake_score.size()))
-            
-            # A_loss = nn.BCELoss()(fake_output, target)
-            # A_loss = (torch.mean(D(target) - D(fake_output)))#- (torch.mean(D(target)) - torch.mean(D(fake_output)))
-            # loss = myloss(myoutput, target)
-            # backward
-            optimizerA.zero_grad()
-            optimizerD.zero_grad()
-            A_loss.backward()
-            # update
-            optimizerA.step()
-            # print('A loss:', A_loss)
-            # update epoch loss
-        A_train_loss = A_loss.item()#+= (D_loss.item() - D_train_loss) / num_train_samples
-        # # go through validation data
-        # model.eval()
-        # for batch_idx, sample in enumerate(val_dataloader):
-        #     target = sample[target_name]#[:, 0, :, :].unsqueeze(1)
-        #     if args.norm:
-        #         target = mydata.norm01(target)
-        #         # target = mydata.quantizer(target, 0, 1, 2 ** args.quantize)
-        #     # target = sample[target_name]
-        #     if args.train_auto:
-        #         net_input = target
-        #     else:
-        #         net_input = sample[net_input_name]
-        #         if args.norm:
-        #             net_input = mydata.norm01(net_input)
-        #             # net_input = mydata.quantizer(net_input, 0, 1, 2** args.quantize)
-        #     target = target.to(device)
-        #     net_input = net_input.to(device)
-        #     #forward
-        #     myoutput = model(net_input)
-        #     lossval = myloss(myoutput, target)
+                # check which model we are training
+                if thing_to_train == 'D':
+                    D.train()
+                    A.eval()
+                    #forward
+                    fake_output = A(net_input)
+                    fake_together = torch.cat([fake_output, target], 1)
+                    score_fake = D(fake_together.detach())
+                    real_together = torch.cat([target, target], 1)
+                    score_real = D(real_together.detach())
+                    D_loss = 0.5 * bce(score_fake, torch.zeros(score_fake.size())).to(device) + 0.5 + bce(score_real, torch.ones(score_real.size()))
+                    # backward
+                    optimizerA.zero_grad()
+                    optimizerD.zero_grad()
+                    D_loss.backward()
+                    # update
+                    optimizerD.step()
+                    # update epoch loss
+                    D_train_loss += (D_loss.item() - D_train_loss) / (num_D_samples)
+                    num_D_samples += 1
 
-        #     val_loss += (lossval.item() - val_loss) / num_val_samples
-        #     num_val_samples +=1
-
-        # scheduler.step()
+                elif thing_to_train == 'A': 
+                    A.train()
+                    D.eval()
+                    #forward
+                    fake_output = A(net_input)
+                    fake_together = torch.cat([fake_output, target], 1)
+                    fake_score = D(fake_together)
+                    A_loss = lambda1 * bce(fake_output, target) + bce(fake_score, torch.ones(fake_score.size().to(device)))
+                    
+                    optimizerA.zero_grad()
+                    optimizerD.zero_grad()
+                    A_loss.backward()
+                    # update
+                    optimizerA.step()
+                    # print('A loss:', A_loss)
+                    # update epoch loss
+                    A_train_loss += (A_loss.item() - A_train_loss) / num_A_samples#+= (D_loss.item() - D_train_loss) / num_train_samples
+                # elif thing_to_train == 'E':
+                #     # validate
 
         # # update lowest_val_loss
         # if val_loss <= lowest_val_loss:
