@@ -235,7 +235,7 @@ def get_hline():
 
 def get_random_point(num_points):
     
-    all_ranges = np.random.randn(num_points)
+    all_ranges = np.random.randn(num_points) * max_rng * 0.3
     all_ranges = all_ranges + max_rng / 2
     all_ranges[all_ranges< max_rng * 0.2] = max_rng * 2
     all_ranges[all_ranges > max_rng * 0.8] = max_rng * 0.8
