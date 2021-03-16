@@ -137,14 +137,17 @@ def get_normal_plot_label(all_point_x, all_point_y):
 
     return normal_plot_label
 
-def get_radar_image_pairs(radar_response):
+def get_radar_image_pairs(radar_response, threshold = True):
     """
     given raw data, return pairs of high resolution and low resolution image
     """
     # radar_response_original = copy.deepcopy(radar_response)
     radar_ra_plot = process_array(radar_response)
     rng_vector = np.arange(num_range_bins) * rng_res
-    thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot) + 10** (-20)), 25, 25)
+    if threshold: 
+        thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot) + 10** (-20)), 25, 25)
+    else:
+        thresholding_mtx = np.ones(radar_ra_plot.shape)
 
     # print("raw data changed by: ", np.mean(np.mean(np.abs(radar_response - radar_response_original))))
 
@@ -158,7 +161,10 @@ def get_radar_image_pairs(radar_response):
     # print('radar response0 shape: ', radar_response0.shape)
     # print('num_samples: ', num_samples)
     radar_ra_plot_partial0 = process_array(radar_response0)
-    thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot_partial0) + 10** (-20)), 25, 25)
+    if threshold:
+        thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot_partial0) + 10** (-20)), 25, 25)
+    else:
+        thresholding_mtx = np.ones(radar_ra_plot.shape)
     # print('took away threshold here')
     radar_ra_plot_partial0_thresholded = radar_ra_plot_partial0 * thresholding_mtx
     # print("raw data changed by: ", np.mean(np.mean(np.abs(radar_response - radar_response_original))))
@@ -172,8 +178,10 @@ def get_radar_image_pairs(radar_response):
 
     radar_ra_plot_partial1 = process_array(radar_response[:, num_channels - num_samples : num_channels])
     # print("raw data changed by: ", np.mean(np.mean(np.abs(radar_response - radar_response_original))))
-    thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot_partial1) + 10** (-20)), 25, 25)
-    
+    if threshold:
+        thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot_partial1) + 10** (-20)), 25, 25)
+    else:
+        thresholding_mtx = np.ones(radar_ra_plot.shape)
     radar_ra_plot_partial1_thresholded = radar_ra_plot_partial1 * thresholding_mtx
 
     normal_plot_partial1_real, x, y = trans.polar_to_rect(np.real(radar_ra_plot_partial1_thresholded), wl, num_channels, rng_vector, normal_h, normal_w)
@@ -250,7 +258,10 @@ if __name__ == '__main__':
     parser.add_argument('--num_scenes', type = int, default = 1)
     parser.add_argument('--sample_name', type = str, default = '')
     parser.add_argument('--distribution', type = str, default = 'uniform')
+    parser.add_argument('--threshold', type = bool, default = False)
     args = parser.parse_args()
+
+    print('threshold?', args.threshold)
 
     mode = args.mode
     max_num_points = args.max_num_points
@@ -266,10 +277,11 @@ if __name__ == '__main__':
     for n in range(num_scenes):
         all_point_x = []
         all_point_y = []
-        num_objects = np.random.randint(1, args.max_num_points)
+        
+        num_objects = args.max_num_points#np.random.randint(1, args.max_num_points)
         for i in range(num_objects):
             if args.sample_type == 'points':
-                point_x, point_y = get_random_point(args.max_num_points)
+                point_x, point_y = get_random_point(1)
                 # all_point_x = np.hstack([all_point_x, point_x])
                 # all_point_y = np.hstack([all_point_y, point_y])
             elif args.sample_type == 'vline':
@@ -301,7 +313,7 @@ if __name__ == '__main__':
         save_path = os.path.join(data_dir, scene_name)
         if pre_processed:
             raw_data = get_scene_raw_data(all_point_x, all_point_y)
-            processed = get_radar_image_pairs(raw_data)
+            processed = get_radar_image_pairs(raw_data, args.threshold)
             # raw_data0 = processed['raw0']
             # print('raw data0 shape: ', raw_data0.shape)
             # print()

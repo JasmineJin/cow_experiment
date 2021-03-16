@@ -222,7 +222,7 @@ if __name__ == '__main__':
                     score_fake = D(fake_together.detach())
                     real_together = torch.cat([target, target], 1)
                     score_real = D(real_together.detach())
-                    D_loss = 0.5 * bce(score_fake, torch.zeros(score_fake.size())).to(device) + 0.5 + bce(score_real, torch.ones(score_real.size()))
+                    D_loss = 0.5 * bce(score_fake, torch.zeros(score_fake.size())).to(device) + 0.5 + bce(score_real, torch.ones(score_real.size()).to(device))
                     # backward
                     optimizerA.zero_grad()
                     optimizerD.zero_grad()
@@ -240,7 +240,7 @@ if __name__ == '__main__':
                     fake_output = A(net_input)
                     fake_together = torch.cat([fake_output, target], 1)
                     fake_score = D(fake_together)
-                    A_loss = lambda1 * bce(fake_output, target) + bce(fake_score, torch.ones(fake_score.size().to(device)))
+                    A_loss = lambda1 * bce(fake_output, target) + bce(fake_score, torch.ones(fake_score.size()).to(device))
                     
                     optimizerA.zero_grad()
                     optimizerD.zero_grad()

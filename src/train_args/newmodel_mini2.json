@@ -1,10 +1,10 @@
 {
     "train_batch_size":     4,
-    "num_train":     4,
+    "num_train":     100,
     "num_val":     4,
     "loss_type": "bce",
-    "train_data_dir": [ "cloud_data", "cluster", "debug"], 
-    "val_data_dir": [ "cloud_data", "cluster", "debug"], 
+    "train_data_dir": [ "cloud_data", "cluster", "train"], 
+    "val_data_dir": [ "cloud_data", "cluster", "val"], 
     "net_input_name":     "log_partial",
     "target_name":     "log_full",
     "optimizer_type": "sgd",

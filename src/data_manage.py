@@ -323,9 +323,9 @@ def matplotlib_imshow(img, title = 'input'):
 
 if __name__ == '__main__':
     # import matplotlib.pyplot as plt
-    data_dir = os.path.join('cloud_data', 'cluster', 'debug')
-    net_input_name = 'log_partial'
-    target_name = 'log_full'
+    data_dir = os.path.join('cloud_data', 'points', 'debug')
+    net_input_name = 'polar_partial2d_q1'
+    target_name = 'polar_full2d_q1'
     data_list = os.listdir(data_dir)
     # ################################################################################
     # # check data statistics
@@ -352,7 +352,7 @@ if __name__ == '__main__':
     ###############################################################################
     show_figs = True
     check_all = False
-    nums_examine = 4
+    nums_examine = 2
     nums_examined = 0
 
     mse = nn.MSELoss(reduction = 'sum')
