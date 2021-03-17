@@ -103,8 +103,8 @@ if __name__ == '__main__':
     # elif args.net_type == 'tinynet':
     #     model = models.MyModel(in_channels = args.in_channels, out_channels = args.out_channels, mid_channels = args.mid_channels, num_downs = args.depth, use_bias = args.use_bias)
     # elif args.net_type == 'new_model':
-    # A = newmodels.MultiFilter(args.in_channels, args.out_channels, args.mid_channels, args.depth, args.use_bias, final_act)
-    A = newmodels.MultifilterSame(args.in_channels, args.mid_channels, args.out_channels, args.depth, args.use_bias, final_act, use_dropout = True)
+    A = newmodels.MultiFilter(args.in_channels, args.out_channels, args.mid_channels, args.depth, args.use_bias, final_act)
+    # A = newmodels.MultifilterSame(args.in_channels, args.mid_channels, args.out_channels, args.depth, args.use_bias, final_act, use_dropout = True)
     D = newmodels.Critic(args.out_channels * 2, args.mid_channels, 512, use_bias = args.use_bias)
     # elif args.net_type == 'cnn':
     #     model = newmodels.MultifilterSame(args.in_channels, args.mid_channels, args.out_channels, args.depth, args.use_bias, final_act)
