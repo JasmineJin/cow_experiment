@@ -29,7 +29,7 @@ if __name__ == '__main__':
     print('finished importing stuff')
     device = torch.device('cpu')
     # model_path = 'single_point1000x100_autoencoder_newmodel_small_polar.pt'
-    model_path = 'points_polar_phase_mag_phase_polar_small.pt'
+    model_path = 'points_polar_phase_mag_phase_polar_small_bce.pt'
     # model_path = os.path.join('models_trained', 'point_model2d_final.pt')
     model = torch.load(model_path, map_location=device)
     model.to(device)
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     # data_list = os.listdir(data_dir)
     # data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)
 # import matplotlib.pyplot as plt
-    data_dir = os.path.join('cloud_data', 'points', 'test')
+    data_dir = os.path.join('cloud_data', 'vline', 'debug')
     net_input_name = 'polar_partial_mag_phase'
     target_name = 'polar_full2d_q1'
     data_list = os.listdir(data_dir)[0:-1]
@@ -75,8 +75,8 @@ if __name__ == '__main__':
     nums_examine = 5
     nums_examined = 0
 
-    mse = nn.MSELoss(reduction = 'sum')
-
+    mse = nn.MSELoss(reduction = 'mean')
+    bce = nn.BCELoss(reduction = 'mean')
     mydataset = mydata.PointDataSet(data_dir, data_list, net_input_name, target_name, pre_processed = True)
     mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= False, num_workers= 4)
     
@@ -103,12 +103,13 @@ if __name__ == '__main__':
             target = sample[target_name]
             target = mydata.norm01(target)
             net_input = sample[net_input_name]
-            net_input = mydata.norm01(net_input)
+            # net_input = mydata.norm01(net_input)
             net_output = model(net_input)
 
             # print(sample['x_points'])
             # print(sample['y_points'])
             # display_data(target, target, net_input, target_name, net_input_name)
+            print(bce(net_output, target))
             plt.figure()
             inputgrid = mydata.get_input_image_grid(net_input, net_input_name)
             mydata.matplotlib_imshow(inputgrid, 'input')
