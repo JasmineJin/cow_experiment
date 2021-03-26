@@ -28,7 +28,8 @@ from numpy.fft import fft, ifft
 if __name__ == '__main__':
     print('finished importing stuff')
     device = torch.device('cpu')
-    model_path = 'single_point1000x100_autoencoder_newmodel_small_polar.pt'
+    # model_path = 'single_point1000x100_autoencoder_newmodel_small_polar.pt'
+    model_path = 'points_polar_phase_mag_phase_polar_small.pt'
     # model_path = os.path.join('models_trained', 'point_model2d_final.pt')
     model = torch.load(model_path, map_location=device)
     model.to(device)
@@ -42,8 +43,8 @@ if __name__ == '__main__':
     # data_list = os.listdir(data_dir)
     # data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)
 # import matplotlib.pyplot as plt
-    data_dir = os.path.join('cloud_data', 'vline', 'debug')
-    net_input_name = 'polar_partial2d_q1'
+    data_dir = os.path.join('cloud_data', 'points', 'test')
+    net_input_name = 'polar_partial_mag_phase'
     target_name = 'polar_full2d_q1'
     data_list = os.listdir(data_dir)[0:-1]
     # ################################################################################

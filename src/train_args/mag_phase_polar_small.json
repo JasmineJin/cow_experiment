@@ -2,7 +2,7 @@
     "train_batch_size":     8,
     "num_train":     1000,
     "num_val":     100,
-    "loss_type": "bce",
+    "loss_type": "mse",
     "train_data_dir": [ "cloud_data", "points", "train"], 
     "val_data_dir": [ "cloud_data", "points", "val"], 
     "net_input_name":     "polar_partial_mag_phase",
@@ -31,7 +31,7 @@
     "shuffle_data": false,
     "pre_processed": true, 
     "exp_name": "points_with_phase_run5",
-    "final_act": "sigmoid",
+    "final_act": "relu",
     "norm": true,
     "quantize": 8
 
