@@ -231,7 +231,7 @@ if __name__ == '__main__':
             train_loss += (loss.item() - train_loss) / num_train_samples
             num_train_samples +=1
             if num_train_samples % args.refresh_every == 0:
-                print(num_train_samples, train_loss, flush = True)
+                # print(num_train_samples, train_loss, flush = True)
 
         # go through validation data
         model.eval()
