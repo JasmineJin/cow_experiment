@@ -82,6 +82,42 @@ class PointDataSet(data.Dataset):
             polar_partial_torch = torch.from_numpy(polar_partial_np).type(torch.float)
             mydata[self.net_input_name] = polar_partial_torch
 
+        elif self.net_input_name == 'polar_partial_phase':
+            polar_partial0_np = processed['polar_partial0']
+            polar_partial1_np = processed['polar_partial1']
+            phase_cos0 = polar_partial0_np.real/(np.abs(polar_partial0_np) + 10 **(-20))
+            phase_sin0 = polar_partial0_np.imag/(np.abs(polar_partial0_np) + 10 **(-20))
+            phase_cos1 = polar_partial1_np.real/(np.abs(polar_partial1_np) + 10 **(-20))
+            phase_sin1 = polar_partial1_np.imag/(np.abs(polar_partial1_np) + 10 **(-20))
+            # phase1 = polar_partial1_np.imag/polar_partial1_np.real
+            log_mag0 = np.log10(np.abs(polar_partial0_np) + 10 ** (-20))
+            log_mag1 = np.log10(np.abs(polar_partial1_np) + 10 ** (-20))
+            polar_partial_np = np.dstack([phase_cos0, phase_sin0, phase_cos1, phase_sin1])
+            # polar_partial_mag = np.dstack([log_mag0, log_mag1])
+            # polar_partial_np = np.log10(polar_partial_np + 10 ** (-20))
+            polar_partial_np = polar_partial_np.transpose(2, 0, 1)
+            # polar_partial_np = polar_partial_np > 0.5
+            polar_partial_torch = torch.from_numpy(polar_partial_np).type(torch.float)
+            mydata[self.net_input_name] = polar_partial_torch
+        
+        elif self.net_input_name == 'polar_partial_mag_phase':
+            polar_partial0_np = processed['polar_partial0']
+            polar_partial1_np = processed['polar_partial1']
+            phase_cos0 = polar_partial0_np.real/(np.abs(polar_partial0_np) + 10 **(-20))
+            phase_sin0 = polar_partial0_np.imag/(np.abs(polar_partial0_np) + 10 **(-20))
+            phase_cos1 = polar_partial1_np.real/(np.abs(polar_partial1_np) + 10 **(-20))
+            phase_sin1 = polar_partial1_np.imag/(np.abs(polar_partial1_np) + 10 **(-20))
+            # phase1 = polar_partial1_np.imag/polar_partial1_np.real
+            log_mag0 = np.log10(np.abs(polar_partial0_np) + 10 ** (-20)) + 12
+            log_mag0 = log_mag0 / 12
+            log_mag1 = np.log10(np.abs(polar_partial1_np) + 10 ** (-20)) + 12
+            log_mag1 = log_mag1 / 12
+            polar_partial_np = np.dstack([log_mag0 * phase_cos0, log_mag0* phase_sin0, log_mag1* phase_cos1, log_mag1* phase_sin1])
+            polar_partial_np = polar_partial_np.transpose(2, 0, 1)
+            # polar_partial_np = polar_partial_np > 0.5
+            polar_partial_torch = torch.from_numpy(polar_partial_np).type(torch.float)
+            mydata[self.net_input_name] = polar_partial_torch
+            
         elif self.net_input_name == 'partial':
             real_partial0_np = processed['real_partial0']
             imag_partial0_np = processed['imag_partial0']
@@ -91,14 +127,7 @@ class PointDataSet(data.Dataset):
             partial_np = partial_np.transpose(2, 0, 1)         
             partial_torch = torch.from_numpy(partial_np).type(torch.float)
             mydata['partial'] = partial_torch
-        # elif self.net_input_name == 'raw_partial':
 
-        #     raw0 = raw_data[:, 0: datagen.num_samples]
-        #     raw1 = raw_data[:, raw_data.shape[1] - datagen.num_samples: raw_data.shape[1]]
-        #     raw_np = np.hstack([raw0.real, raw0.imag, raw1.real, raw1.imag])
-        #     # raw_np = raw_np.transpose(2, 0, 1)
-        #     raw_torch = torch.from_numpy(raw_np).type(torch.float)
-        #     mydata[self.net_input_name] = raw_torch
         else:
             raise NotImplementedError('input name not implemented for dataset')
 
@@ -263,6 +292,15 @@ def get_input_image_grid(net_input, net_input_name):
         imag1 = net_input[0, 3, :, :]
         mag1 = np.abs(real1 + 1j * imag1) + 10 **(-12)
         input1 = 20 * np.log(mag1)
+    if net_input_name == 'polar_partial_mag_phase':
+        real0 = net_input[0, 0, :, :]
+        imag0 = net_input[0, 1, :, :]
+        mag0 = np.abs(real0 + 1j * imag0)
+        input0 = mag0
+        real1 = net_input[0, 2, :, :]
+        imag1 = net_input[0, 3, :, :]
+        mag1 = np.abs(real1 + 1j * imag1)
+        input1 = mag1
     elif net_input_name == 'polar_partial':
         net_input0 = net_input[0, 0:net_input.shape[1]//2, :]
         net_input1 = net_input[0, net_input.shape[1]//2:net_input.shape[1], :]
@@ -324,7 +362,7 @@ def matplotlib_imshow(img, title = 'input'):
 if __name__ == '__main__':
     # import matplotlib.pyplot as plt
     data_dir = os.path.join('cloud_data', 'points', 'debug')
-    net_input_name = 'polar_partial2d_q1'
+    net_input_name = 'polar_partial_mag_phase'
     target_name = 'polar_full2d_q1'
     data_list = os.listdir(data_dir)
     # ################################################################################

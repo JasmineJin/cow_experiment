@@ -209,8 +209,8 @@ if __name__ == '__main__':
             #     net_input = target
             # else:
             net_input = sample[net_input_name]
-            if args.norm:
-                net_input = mydata.norm01(net_input)
+            # if args.norm:
+            #     net_input = mydata.norm01(net_input)
                     # net_input = mydata.quantizer(net_input, 0, 1, 2 ** args.quantize)
             net_input = net_input.to(device)
             # print(net_input_name)
@@ -245,8 +245,8 @@ if __name__ == '__main__':
             #     net_input = target
         # else:
             net_input = sample[net_input_name]
-            if args.norm:
-                net_input = mydata.norm01(net_input)
+            # if args.norm:
+            #     net_input = mydata.norm01(net_input)
                     # net_input = mydata.quantizer(net_input, 0, 1, 2** args.quantize)
             target = target.to(device)
             net_input = net_input.to(device)

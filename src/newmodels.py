@@ -137,6 +137,19 @@ class MultiFilter(nn.Module):
         # print('feature size: ', x.size())
         return self.up(x)
 
+class MultiFilterMagPhase(nn.Module):
+    def __init__(self, in_channels, out_channels, mid_channels, depth, use_bias = True, last_act = nn.ReLU, use_dropout = False):
+        super(MultiFilter, self).__init__()
+        self.down = MultiFilterDown(in_channels, mid_channels, depth, use_bias)
+        self.up = MultiFilterUp(mid_channels * 2, out_channels, depth, use_bias, last_act, use_dropout)
+        # self.model = nn.Sequential(self.down, self.up)
+    
+    def forward(self, x):
+        x = self.down(x)
+        # print('mean in features: ', torch.mean(torch.abs(x)))
+        # print('feature size: ', x.size())
+        return self.up(x)
+
 class Critic(nn.Module):
     def __init__(self, in_channels, mid_channels, h_dim, use_bias = True, last_act = nn.ReLU, use_dropout = False):
         super(Critic, self).__init__()

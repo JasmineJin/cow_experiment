@@ -14,7 +14,7 @@
     "num_epochs":     100,
     "model_name":    "points_small_1000x100",
     "net_type":     "new_model",
-    "in_channels":     2,
+    "in_channels":     4,
     "out_channels":    1,
     "mid_channels": 64,
     "depth":  4,
