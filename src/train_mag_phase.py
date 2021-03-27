@@ -143,7 +143,7 @@ if __name__ == '__main__':
     data_dir_train = os.path.join(*args.train_data_dir)
     print('taking training data from directory:', data_dir_train)
     data_list_train = os.listdir(data_dir_train)
-    train_dataset = mydata.PointDataSet(data_dir_train, data_list_train[0: args.num_train], net_input_name, target_name, args.pre_processed)
+    train_dataset = mydata.PointDataSet(data_dir_train, data_list_train[0: args.num_train])
     train_dataloader = data.DataLoader(train_dataset, batch_size = 1, shuffle= args.shuffle_data, num_workers= 1)
 
     if len(args.val_data_dir) == 0:
@@ -153,7 +153,7 @@ if __name__ == '__main__':
         data_dir_val = os.path.join(*args.val_data_dir)
         print('taking validation data from directory:', data_dir_val)
         data_list_val = os.listdir(data_dir_val)
-        val_dataset = mydata.PointDataSet(data_dir_val, data_list_val[0: args.num_val], args.net_input_name, args.target_name, args.pre_processed)
+        val_dataset = mydata.PointDataSet(data_dir_val, data_list_val[0: args.num_val])
         val_dataloader = data.DataLoader(val_dataset, batch_size = 1, shuffle= False, num_workers= 1)
 
     ##########################################################################
@@ -205,19 +205,10 @@ if __name__ == '__main__':
                 target = mydata.norm01(target)
                 # target = mydata.quantizer(target, 0, 1, 2 ** args.quantize)
             target = target.to(device)
-            # if args.train_auto:
-            #     net_input = target
-            # else:
+
             net_input = sample[net_input_name]
-            # if args.norm:
-            #     net_input = mydata.norm01(net_input)
-                    # net_input = mydata.quantizer(net_input, 0, 1, 2 ** args.quantize)
+
             net_input = net_input.to(device)
-            # print(net_input_name)
-            # inputgrid = mydata.get_input_image_grid(net_input, net_input_name)
-            # plt.figure()
-            # mydata.matplotlib_imshow(inputgrid, 'input')
-            # plt.show()
 
             #forward
             myoutput = model(net_input)

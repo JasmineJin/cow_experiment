@@ -10,9 +10,15 @@ import image_transformation_utils as trans
 import torchvision
 import torchvision.transforms as transforms
 from PIL import Image
-
+#####################################################################################################################
+#
+# we are making strides here! 
+#
+# our new version PointDataSet is going to assume the input data has phase info like in notes from 3/26
+#
+#####################################################################################################################
 class PointDataSet(data.Dataset):
-    def __init__(self, data_dir, data_list, net_input_name = 'partial', target_name = 'full', pre_processed = False):
+    def __init__(self, data_dir, data_list, pre_processed = False):
         self.data_dir = data_dir
         self.data_list = data_list
         self.net_input_name = net_input_name
@@ -33,147 +39,9 @@ class PointDataSet(data.Dataset):
         x_points = npzfile['all_point_x']
         # print(x_points)
         y_points = npzfile['all_point_y']
-        # mydata['x_points'] = torch.from_numpy(x_points).type(torch.float)
-        # mydata['y_points'] = torch.from_numpy(y_points).type(torch.float)
 
-        if self.pre_processed:
-            # raw_data = datagen.get_scene_raw_data(x_points, y_points)
-            processed = npzfile
-        else:
-            raw_data = gen.get_scene_raw_data(x_points, y_points)
-            processed = gen.get_radar_image_pairs(raw_data)
-
-        if self.net_input_name == 'log_partial': #or self.net_input_name == 'log_partial_q1':
-            partial0_np = processed['mag_partial0']
-            # print('min in partial0', np.min(np.min(partial0_np)))
-            partial1_np = processed['mag_partial1']
-            partial_np = np.dstack((partial0_np, partial1_np))
-            partial_np = 20 * np.log10(partial_np + 10 **(-20))
-            partial_np = partial_np.transpose(2, 0, 1)
-            # if self.net_input_name == 'log_partial_q1':
-            #     partial_np = partial_np > -20 
-            partial_torch = torch.from_numpy(partial_np).type(torch.float)
-            mydata[self.net_input_name] = partial_torch
-        
-        elif self.net_input_name == 'polar_partial':
-            polar_partial0_np = processed['polar_partial0']
-            polar_partial1_np = processed['polar_partial1']
-            polar_partial_np = np.block([[polar_partial0_np.real, polar_partial0_np.imag], [polar_partial1_np.real, polar_partial1_np.imag]])
-            polar_partial_torch = torch.from_numpy(polar_partial_np).type(torch.float)
-            mydata['polar_partial'] = polar_partial_torch
-
-        elif self.net_input_name == 'polar_partial2d':
-            polar_partial0_np = processed['polar_partial0']
-            polar_partial1_np = processed['polar_partial1']
-            # polar_partial_np0 = np.hstack([polar_partial0_np.real, polar_partial0_np.imag])
-            # polar_partial_np1 = np.hstack([polar_partial1_np.real, polar_partial1_np.imag])
-            polar_partial_np = np.dstack([polar_partial0_np.real, polar_partial0_np.imag, polar_partial1_np.real, polar_partial1_np.imag])
-            polar_partial_np = polar_partial_np.transpose(2, 0, 1)
-            polar_partial_torch = torch.from_numpy(polar_partial_np).type(torch.float)
-            mydata['polar_partial2d'] = polar_partial_torch
-        
-        elif self.net_input_name == 'polar_partial2d_q1':
-            polar_partial0_np = processed['polar_partial0']
-            polar_partial1_np = processed['polar_partial1']
-            polar_partial_np = np.dstack([np.abs(polar_partial0_np), np.abs(polar_partial1_np)])
-            polar_partial_np = np.log10(polar_partial_np + 10 ** (-20))
-            polar_partial_np = polar_partial_np.transpose(2, 0, 1)
-            # polar_partial_np = polar_partial_np > 0.5
-            polar_partial_torch = torch.from_numpy(polar_partial_np).type(torch.float)
-            mydata[self.net_input_name] = polar_partial_torch
-
-        elif self.net_input_name == 'polar_partial_phase':
-            polar_partial0_np = processed['polar_partial0']
-            polar_partial1_np = processed['polar_partial1']
-            phase_cos0 = polar_partial0_np.real/(np.abs(polar_partial0_np) + 10 **(-20))
-            phase_sin0 = polar_partial0_np.imag/(np.abs(polar_partial0_np) + 10 **(-20))
-            phase_cos1 = polar_partial1_np.real/(np.abs(polar_partial1_np) + 10 **(-20))
-            phase_sin1 = polar_partial1_np.imag/(np.abs(polar_partial1_np) + 10 **(-20))
-            # phase1 = polar_partial1_np.imag/polar_partial1_np.real
-            log_mag0 = np.log10(np.abs(polar_partial0_np) + 10 ** (-20))
-            log_mag1 = np.log10(np.abs(polar_partial1_np) + 10 ** (-20))
-            polar_partial_np = np.dstack([phase_cos0, phase_sin0, phase_cos1, phase_sin1])
-            # polar_partial_mag = np.dstack([log_mag0, log_mag1])
-            # polar_partial_np = np.log10(polar_partial_np + 10 ** (-20))
-            polar_partial_np = polar_partial_np.transpose(2, 0, 1)
-            # polar_partial_np = polar_partial_np > 0.5
-            polar_partial_torch = torch.from_numpy(polar_partial_np).type(torch.float)
-            mydata[self.net_input_name] = polar_partial_torch
-        
-        elif self.net_input_name == 'polar_partial_mag_phase':
-            polar_partial0_np = processed['polar_partial0']
-            polar_partial1_np = processed['polar_partial1']
-            phase_cos0 = polar_partial0_np.real/(np.abs(polar_partial0_np) + 10 **(-20))
-            phase_sin0 = polar_partial0_np.imag/(np.abs(polar_partial0_np) + 10 **(-20))
-            phase_cos1 = polar_partial1_np.real/(np.abs(polar_partial1_np) + 10 **(-20))
-            phase_sin1 = polar_partial1_np.imag/(np.abs(polar_partial1_np) + 10 **(-20))
-            # phase1 = polar_partial1_np.imag/polar_partial1_np.real
-            log_mag0 = np.log10(np.abs(polar_partial0_np) + 10 ** (-20)) + 12
-            log_mag0 = log_mag0 / 12
-            log_mag1 = np.log10(np.abs(polar_partial1_np) + 10 ** (-20)) + 12
-            log_mag1 = log_mag1 / 12
-            polar_partial_np = np.dstack([log_mag0 * phase_cos0, log_mag0* phase_sin0, log_mag1* phase_cos1, log_mag1* phase_sin1])
-            polar_partial_np = polar_partial_np.transpose(2, 0, 1)
-            # polar_partial_np = polar_partial_np > 0.5
-            polar_partial_torch = torch.from_numpy(polar_partial_np).type(torch.float)
-            mydata[self.net_input_name] = polar_partial_torch
-            
-        elif self.net_input_name == 'partial':
-            real_partial0_np = processed['real_partial0']
-            imag_partial0_np = processed['imag_partial0']
-            real_partial1_np = processed['real_partial1']
-            imag_partial1_np = processed['imag_partial1']
-            partial_np = np.dstack((real_partial0_np, imag_partial0_np, real_partial1_np, imag_partial1_np))
-            partial_np = partial_np.transpose(2, 0, 1)         
-            partial_torch = torch.from_numpy(partial_np).type(torch.float)
-            mydata['partial'] = partial_torch
-
-        else:
-            raise NotImplementedError('input name not implemented for dataset')
-
-        if self.target_name == 'log_full' or self.target_name == 'log_q1':
-            target_np = 20 * np.log10(processed['mag_full'] + 10 **(-12))
-            target_np = target_np[np.newaxis, :, :]
-            
-            if self.target_name == 'log_q1':
-                target_np = target_np > 0
-
-            target_torch = torch.from_numpy(target_np).type(torch.float)
-            mydata[self.target_name] = target_torch
-        elif self.target_name == '':
-            pass
-            
-        elif self.target_name == 'polar_full':
-            polar_full_np = processed['polar_full']
-            polar_full_np = np.hstack([polar_full_np.real, polar_full_np.imag])
-            polar_full_torch = torch.from_numpy(polar_full_np).type(torch.float)
-            mydata[self.target_name] = polar_full_torch
-        elif self.target_name == 'polar_full2d':
-            polar_full_np = processed['polar_full']
-            polar_full_np = np.dstack([polar_full_np.real, polar_full_np.imag])
-            polar_full_np = polar_full_np.transpose(2, 0, 1)
-            polar_full_torch = torch.from_numpy(polar_full_np).type(torch.float)
-            mydata[self.target_name] = polar_full_torch
-        elif self.target_name == 'polar_full2d_q1':
-            polar_full_np = processed['polar_full']
-            polar_full_np = np.abs(polar_full_np)
-            polar_full_np = polar_full_np[np.newaxis, :, :]
-            polar_full_np = np.log10(polar_full_np + 10 **(-12))
-            # polar_full_np = polar_full_np > 1
-            polar_full_torch = torch.from_numpy(polar_full_np).type(torch.float)
-            mydata[self.target_name] = polar_full_torch
-        elif self.target_name == 'full':
-            real_full_np = processed['real_full']
-            imag_full_np = processed['imag_full']
-            full_np = np.dstack((real_full_np, imag_full_np))
-            full_np = full_np.transpose(2, 0, 1)
-            full_torch = torch.from_numpy(full_np).type(torch.float)
-            mydata[self.target_name] = full_torch
-        # elif self.target_name == 'raw_full':
-        #     raw_np = np.dstack([raw_data.real, raw_data.imag])
-            
-        else:
-            raise NotImplementedError('target name not implemented for dataset')
+        mydata['polar_full'] = torch.from_numpy(npzfile['polar_full']).type(torch.float)
+        mydata['polar_partial_mag_phase'] = torch.from_numpy(npzfile['polar_partial_mag_phase']).type(torch.float)
         
         return mydata
 
@@ -203,117 +71,19 @@ def quantizer(data, low, high, n_levels):
 def dequantizer(quantized_data, low, high, n_levels):
     return quantized_data
 
-def display_data(target, output, net_input, target_name, net_input_name):
-    target = target.cpu().detach()
-    output = output.cpu().detach()
-    net_input = net_input.cpu().detach()
-    if target_name == 'log_full' or target_name == 'log_q1':
-        output_np = output[0, 0, :, :]
-        target_np = target[0, 0, :, :]
-    elif target_name == 'full' or 'polar_full2d':
-        output_real = output[0, 0, :, :]
-        output_imag = output[0, 1, :, :]
-        output_mag = np.abs(output_real + 1j * output_imag) + 10 ** (-12)
-        output_np = 20 * np.log(output_mag) 
-        target_real = target[0, 0, :, :]
-        target_imag = target[0, 1, :, :]
-        target_mag = np.abs(target_real + 1j * target_imag) + 10 **(-12)
-        target_np = 20 * np.log(target_mag)
-    elif target_name == 'polar_full':
-        # print('output shape:', output.shape)
-        output_real = output[0, :, 0: output.shape[2]// 2]
-        output_imag = output[0, :, output.shape[2]//2 : output.shape[2]]
-        output_mag = np.abs(output_real + 1j * output_imag) + 10 ** (-12)
-        output_np = 20 * np.log(output_mag)
-        # print('output_imag shape: ', output_imag.shape)
-        target_real = target[0, :, 0: target.shape[2]// 2]
-        target_imag = target[0, :, target.shape[2]//2 : target.shape[2]]
-        target_mag = np.abs(target_real + 1j * target_imag) + 10 ** (-12)
-        target_np = 20 * np.log(target_mag)
-    else:
-        raise NotImplementedError
-    
-    if net_input_name == 'log_partial' or net_input_name == 'log_partial_q1':
-        input0 = net_input[0, 0, :, :]
-        input1 = net_input[0, 1, :, :]
-    elif net_input_name == 'partial' or 'polar_partial2d':
-        real0 = net_input[0, 0, :, :]
-        imag0 = net_input[0, 1, :, :]
-        mag0 = np.abs(real0 + 1j * imag0) + 10 ** (-12)
-        input0 = 20 * np.log(mag0)
-        real1 = net_input[0, 2, :, :]
-        imag1 = net_input[0, 3, :, :]
-        mag1 = np.abs(real1 + 1j * imag1) + 10 **(-12)
-        input1 = 20 * np.log(mag1)
-    elif net_input_name == 'polar_partial':
-        net_input0 = net_input[0, 0:net_input.shape[1]//2, :]
-        net_input1 = net_input[0, net_input.shape[1]//2:net_input.shape[1], :]
-        real0 = net_input0[:, 0: net_input0.shape[1]//2]
-        imag0 = net_input0[:, net_input0.shape[1]// 2 : net_input0.shape[1]]
-        mag0 = np.abs(real0 + 1j * imag0) + 10 ** (-12)
-        input0 = 20 * np.log(mag0)
-        real1 = net_input1[:, 0: net_input1.shape[1]//2]
-        imag1 = net_input1[:, net_input1.shape[1]// 2 : net_input1.shape[1]]
-        mag1 = np.abs(real1 + 1j * imag1) + 10 **(-12)
-        input1 = 20 * np.log(mag1)
-    else:
-        raise NotImplementedError
-
-    # img_grid = torchvision.utils.make_grid(images)
-    # target_tensor = transforms.ToTensor()(target_np).unsqueeze(0).unsqueeze(0)
-    # output_tensor = transforms.ToTensor()(output_np).unsqueeze(0).unsqueeze(0)
-    # input0_tensor = transforms.ToTensor()(input0).unsqueeze(0).unsqueeze(0)
-    # input1_tensor = transforms.ToTensor()(input1).unsqueeze(0).unsqueeze(0)
-    extent = [-gen.max_rng, gen.max_rng, 0, gen.max_rng]
-
-    fig, axs = plt.subplots(2, 2)
-    axs[0, 0].imshow(target_np,  extent = extent, origin= 'lower')
-    axs[0, 0].set_title('target')
-    axs[1, 0].imshow(output_np, extent = extent, origin= 'lower')
-    axs[1, 0].set_title('net output')
-    axs[0, 1].imshow(input0, extent = extent, origin= 'lower')
-    axs[0, 1].set_title('net input 0')
-    axs[1, 1].imshow(input1, extent = extent, origin= 'lower')
-    axs[1,1].set_title('net input 1')
-
-    plt.show()
 
 def get_input_image_grid(net_input, net_input_name):
     net_input = net_input.cpu().detach()
-    if net_input_name == 'log_partial' or net_input_name == 'log_partial_q1' or net_input_name == 'polar_partial2d_q1':
-        input0 = net_input[0, 0, :, :]
-        input1 = net_input[0, 1, :, :]
-    elif net_input_name == 'partial' or net_input_name == 'polar_partial2d':
-        real0 = net_input[0, 0, :, :]
-        imag0 = net_input[0, 1, :, :]
-        mag0 = np.abs(real0 + 1j * imag0) + 10 ** (-12)
-        input0 = 20 * np.log(mag0)
-        real1 = net_input[0, 2, :, :]
-        imag1 = net_input[0, 3, :, :]
-        mag1 = np.abs(real1 + 1j * imag1) + 10 **(-12)
-        input1 = 20 * np.log(mag1)
-    if net_input_name == 'polar_partial_mag_phase':
-        real0 = net_input[0, 0, :, :]
-        imag0 = net_input[0, 1, :, :]
-        mag0 = np.abs(real0 + 1j * imag0)
-        input0 = mag0
-        real1 = net_input[0, 2, :, :]
-        imag1 = net_input[0, 3, :, :]
-        mag1 = np.abs(real1 + 1j * imag1)
-        input1 = mag1
-    elif net_input_name == 'polar_partial':
-        net_input0 = net_input[0, 0:net_input.shape[1]//2, :]
-        net_input1 = net_input[0, net_input.shape[1]//2:net_input.shape[1], :]
-        real0 = net_input0[:, 0: net_input0.shape[1]//2]
-        imag0 = net_input0[:, net_input0.shape[1]// 2 : net_input0.shape[1]]
-        mag0 = np.abs(real0 + 1j * imag0) + 10 ** (-12)
-        input0 = 20 * np.log(mag0)
-        real1 = net_input1[:, 0: net_input1.shape[1]//2]
-        imag1 = net_input1[:, net_input1.shape[1]// 2 : net_input1.shape[1]]
-        mag1 = np.abs(real1 + 1j * imag1) + 10 **(-12)
-        input1 = 20 * np.log(mag1)
-    else:
-        raise NotImplementedError('invalid input name')
+    # if net_input_name == 'polar_partial_mag_phase':
+    real0 = net_input[0, 0, :, :]
+    imag0 = net_input[0, 1, :, :]
+    mag0 = np.abs(real0 + 1j * imag0)
+    input0 = mag0
+    real1 = net_input[0, 2, :, :]
+    imag1 = net_input[0, 3, :, :]
+    mag1 = np.abs(real1 + 1j * imag1)
+    input1 = mag1
+
     input0_tensor = input0.unsqueeze(0)
     input1_tensor = input1.unsqueeze(0)
     inputgrid = torchvision.utils.make_grid([input0_tensor, input1_tensor], padding = 20, pad_value = 1)
@@ -323,31 +93,8 @@ def get_input_image_grid(net_input, net_input_name):
 def get_output_target_image_grid(output, target, target_name):
     target = target.cpu().detach()
     output = output.cpu().detach()
-    if target_name == 'log_full' or target_name == 'log_q1' or target_name == 'polar_full2d_q1':
-        output_np = output[0, 0, :, :]
-        target_np = target[0, 0, :, :]
-    elif target_name == 'full' or target_name == 'polar_full2d':
-        output_real = output[0, 0, :, :]
-        output_imag = output[0, 1, :, :]
-        output_mag = np.abs(output_real + 1j * output_imag) + 10 ** (-12)
-        output_np = 20 * np.log(output_mag) 
-        target_real = target[0, 0, :, :]
-        target_imag = target[0, 1, :, :]
-        target_mag = np.abs(target_real + 1j * target_imag) + 10 **(-12)
-        target_np = 20 * np.log(target_mag)
-    elif target_name == 'polar_full':
-        # print('output shape:', output.shape)
-        output_real = output[0, :, 0: output.shape[2]// 2]
-        output_imag = output[0, :, output.shape[2]//2 : output.shape[2]]
-        output_mag = np.abs(output_real + 1j * output_imag) + 10 ** (-12)
-        output_np = 20 * np.log(output_mag)
-        # print('output_imag shape: ', output_imag.shape)
-        target_real = target[0, :, 0: target.shape[2]// 2]
-        target_imag = target[0, :, target.shape[2]//2 : target.shape[2]]
-        target_mag = np.abs(target_real + 1j * target_imag) + 10 ** (-12)
-        target_np = 20 * np.log(target_mag)
-    else:
-        raise NotImplementedError('invalid target name')
+    output_np = output[0, 0, :, :]
+    target_np = target[0, 0, :, :]
     
     output_tensor = output_np.unsqueeze(0)
     target_tensor = target_np.unsqueeze(0)
@@ -361,9 +108,9 @@ def matplotlib_imshow(img, title = 'input'):
 
 if __name__ == '__main__':
     # import matplotlib.pyplot as plt
-    data_dir = os.path.join('cloud_data', 'points', 'debug')
+    data_dir = os.path.join('cloud_data', 'mooooo', 'debug')
     net_input_name = 'polar_partial_mag_phase'
-    target_name = 'polar_full2d_q1'
+    target_name = 'polar_full'
     data_list = os.listdir(data_dir)
     # ################################################################################
     # # check data statistics
@@ -395,7 +142,7 @@ if __name__ == '__main__':
 
     mse = nn.MSELoss(reduction = 'sum')
 
-    mydataset = PointDataSet(data_dir, data_list, net_input_name, target_name, pre_processed = True)
+    mydataset = PointDataSet(data_dir, data_list)
     mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= False, num_workers= 4)
     
     myiter = iter(mydataloader)

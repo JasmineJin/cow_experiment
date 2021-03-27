@@ -1,5 +1,8 @@
 # import numpy as np
 # import matplotlib
+############################################################################################
+# only saving un-thresholded polar data
+############################################################################################
 import train
 import numpy as np
 import scipy as sp
@@ -137,73 +140,34 @@ def get_normal_plot_label(all_point_x, all_point_y):
 
     return normal_plot_label
 
-def get_radar_image_pairs(radar_response, threshold = True):
+def get_radar_image_pairs(radar_response):
     """
-    given raw data, return pairs of high resolution and low resolution image
+    given raw data, return pairs of high and low aperture images
     """
     # radar_response_original = copy.deepcopy(radar_response)
-    radar_ra_plot = process_array(radar_response)
-    rng_vector = np.arange(num_range_bins) * rng_res
-    if threshold: 
-        thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot) + 10** (-20)), 25, 25)
-    else:
-        thresholding_mtx = np.ones(radar_ra_plot.shape)
+    polar_full = process_array(radar_response)
+    polar_full = np.log10(np.abs(polar_full) + 10 **(-20))
 
-    # print("raw data changed by: ", np.mean(np.mean(np.abs(radar_response - radar_response_original))))
+    polar_partial0_np = process_array(radar_response[:, 0: num_samples])
 
-    radar_ra_plot_thresholded = radar_ra_plot * thresholding_mtx
-    normal_plot_real, x, y = trans.polar_to_rect(np.real(radar_ra_plot_thresholded), wl, num_channels, rng_vector, normal_h, normal_w)
-    normal_plot_imag, x, y = trans.polar_to_rect(np.imag(radar_ra_plot_thresholded), wl, num_channels, rng_vector, normal_h, normal_w)
-    normal_plot = np.abs(normal_plot_real + 1j * normal_plot_imag)
-    # normal_plot = np.log10(normal_plot + 10** (-12))
+    polar_partial1_np = process_array(radar_response[:, num_channels - num_samples : num_channels])
 
-    radar_response0 = radar_response[:, 0: num_samples]
-    # print('radar response0 shape: ', radar_response0.shape)
-    # print('num_samples: ', num_samples)
-    radar_ra_plot_partial0 = process_array(radar_response0)
-    if threshold:
-        thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot_partial0) + 10** (-20)), 25, 25)
-    else:
-        thresholding_mtx = np.ones(radar_ra_plot.shape)
-    # print('took away threshold here')
-    radar_ra_plot_partial0_thresholded = radar_ra_plot_partial0 * thresholding_mtx
-    # print("raw data changed by: ", np.mean(np.mean(np.abs(radar_response - radar_response_original))))
-
-    normal_plot_partial0_real, x, y = trans.polar_to_rect(np.real(radar_ra_plot_partial0_thresholded), wl, num_channels, rng_vector, normal_h, normal_w)
-    normal_plot_partial0_imag, x, y = trans.polar_to_rect(np.imag(radar_ra_plot_partial0_thresholded), wl, num_channels, rng_vector, normal_h, normal_w)
-    normal_plot_partial0 = np.abs(normal_plot_partial0_real + 1j * normal_plot_partial0_imag)
-    # normal_plot_partial0 = np.log10(normal_plot_partial0 + 10 ** (-12))
-    
-    # print("raw data changed by: ", np.mean(np.mean(np.abs(radar_response - radar_response_original))))
-
-    radar_ra_plot_partial1 = process_array(radar_response[:, num_channels - num_samples : num_channels])
-    # print("raw data changed by: ", np.mean(np.mean(np.abs(radar_response - radar_response_original))))
-    if threshold:
-        thresholding_mtx = apply_threshold_per_row(20 * np.log10(np.abs(radar_ra_plot_partial1) + 10** (-20)), 25, 25)
-    else:
-        thresholding_mtx = np.ones(radar_ra_plot.shape)
-    radar_ra_plot_partial1_thresholded = radar_ra_plot_partial1 * thresholding_mtx
-
-    normal_plot_partial1_real, x, y = trans.polar_to_rect(np.real(radar_ra_plot_partial1_thresholded), wl, num_channels, rng_vector, normal_h, normal_w)
-    normal_plot_partial1_imag, x, y = trans.polar_to_rect(np.imag(radar_ra_plot_partial1_thresholded), wl, num_channels, rng_vector, normal_h, normal_w)
-    normal_plot_partial1 = np.abs(normal_plot_partial1_real + 1j * normal_plot_partial1_imag)
-    # normal_plot_partial1 = np.log10(normal_plot_partial1 + 10 ** (-12))
+    phase_cos0 = polar_partial0_np.real/(np.abs(polar_partial0_np) + 10 **(-20))
+    phase_sin0 = polar_partial0_np.imag/(np.abs(polar_partial0_np) + 10 **(-20))
+    phase_cos1 = polar_partial1_np.real/(np.abs(polar_partial1_np) + 10 **(-20))
+    phase_sin1 = polar_partial1_np.imag/(np.abs(polar_partial1_np) + 10 **(-20))
+    # phase1 = polar_partial1_np.imag/polar_partial1_np.real
+    log_mag0 = np.log10(np.abs(polar_partial0_np) + 10 ** (-20))
+    log_mag0 = (log_mag0 - np.min(np.min(log_mag0))) / (np.max(np.max(log_mag0)) - np.min(np.min(log_mag0)))
+    log_mag1 = np.log10(np.abs(polar_partial1_np) + 10 ** (-20))
+    log_mag1 = (log_mag1 - np.min(np.min(log_mag1))) / (np.max(np.max(log_mag1)) - np.min(np.min(log_mag1)))
+    polar_partial_np = np.dstack([log_mag0 * phase_cos0, log_mag0* phase_sin0, log_mag1* phase_cos1, log_mag1* phase_sin1])
+    polar_partial_np = polar_partial_np.transpose(2, 0, 1)
 
     output = {
-                'mag_full': normal_plot, 
-                # 'raw0': radar_response0,
-                'real_full': normal_plot_real,
-                'imag_full': normal_plot_imag,
-                'mag_partial0': normal_plot_partial0, 
-                'real_partial0': normal_plot_partial0_real,
-                'imag_partial0': normal_plot_partial0_imag,
-                'mag_partial1': normal_plot_partial1, 
-                'real_partial1': normal_plot_partial1_real,
-                'imag_partial1': normal_plot_partial1_imag,
-                'polar_full': radar_ra_plot_thresholded,
-                'polar_partial0': radar_ra_plot_partial0_thresholded,
-                'polar_partial1': radar_ra_plot_partial1_thresholded}
-    
+            'polar_full': polar_full[np.newaxis, :, :],
+            'polar_partial_mag_phase': polar_partial_np
+            }
     return output
 
 def get_vline(start_x, start_y, depth):
@@ -253,15 +217,13 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='set mode for data generation')
     parser.add_argument('--mode', type = str, default = 'debug')
+    parser.add_argument('--directory', type = str, default = 'mooooo')
     parser.add_argument('--sample_type',type = str, default = 'vline' )
     parser.add_argument('--max_num_points', type = int, default = 1)
     parser.add_argument('--num_scenes', type = int, default = 1)
-    parser.add_argument('--sample_name', type = str, default = '')
-    parser.add_argument('--distribution', type = str, default = 'uniform')
-    parser.add_argument('--threshold', type = bool, default = False)
     args = parser.parse_args()
 
-    print('threshold?', args.threshold)
+    # print('threshold?', args.threshold)
 
     mode = args.mode
     max_num_points = args.max_num_points
@@ -271,7 +233,7 @@ if __name__ == '__main__':
     # print(num_samples)
     pre_processed = True
 
-    data_dir = os.path.join('cloud_data', args.sample_type, mode)
+    data_dir = os.path.join('cloud_data', args.directory, mode)
     os.makedirs(data_dir, exist_ok = True)
 
     for n in range(num_scenes):
@@ -279,65 +241,44 @@ if __name__ == '__main__':
         all_point_y = []
         
         num_objects = args.max_num_points#np.random.randint(1, args.max_num_points)
+        
         for i in range(num_objects):
-            if args.sample_type == 'points':
+            if args.sample_type == 'mix':
+                a = np.random.rand()
+                if a < 0.5:
+                    object_to_add = 'points'
+                else:
+                    object_to_add = 'vline'
+            else:
+                object_to_add = args.sample_type
+
+            if object_to_add == 'points':
                 point_x, point_y = get_random_point(1)
                 # all_point_x = np.hstack([all_point_x, point_x])
                 # all_point_y = np.hstack([all_point_y, point_y])
-            elif args.sample_type == 'vline':
+            elif object_to_add == 'vline':
                 start_x = np.random.rand() * 2 * max_rng - max_rng
                 start_y = np.random.rand() * max_rng
-                point_x, point_y = get_vline(start_x, start_y, 50)
-                # all_point_x = np.hstack([all_point_x, point_x])
-                # all_point_y = np.hstack([all_point_y, point_y])
-            elif args.sample_type == 'cluster':
-                start_x = start_x = np.random.rand() * 2 * max_rng - max_rng
-                start_y = np.random.rand() * max_rng
-                spread_x = np.random.rand() * 3 + 0.5
-                spread_y = np.random.rand() * 3 + 0.5
-                # print(spread_x)
-                # print(spread_y)
-                cluster_size = np.random.randint(100, 200)
-                point_x, point_y = get_cluster(start_x, start_y, cluster_size, spread_x, spread_y)
-                
-            elif args.sample_type == 'mix':
-                start_x = np.random.rand() * 2 * max_rng - max_rng
-                start_y = np.random.rand() * max_rng
-                depth = np.random.randint(10, 200)
-                point_x, point_y = get_vline(start_x, start_y, 50)
+                point_x, point_y = get_vline(start_x, start_y, 75)
 
             all_point_x = np.hstack([all_point_x, point_x])
             all_point_y = np.hstack([all_point_y, point_y])
 
-        scene_name = args.sample_name + '_' + str(n) + '.npz'
+        scene_name = args.sample_type + '_' + str(num_objects) +'_objects_'+ str(n) + '.npz'
         save_path = os.path.join(data_dir, scene_name)
-        if pre_processed:
-            raw_data = get_scene_raw_data(all_point_x, all_point_y)
-            processed = get_radar_image_pairs(raw_data, args.threshold)
-            # raw_data0 = processed['raw0']
-            # print('raw data0 shape: ', raw_data0.shape)
-            # print()
-            np.savez(save_path, all_point_x = all_point_x, 
-                    all_point_y = all_point_y,
-                    # raw_data = raw_data,
-                    # raw_data0 = processed['raw0'],
-                    mag_full = processed['mag_full'], 
-                    real_full = processed['real_full'],
-                    imag_full = processed['imag_full'],
-                    mag_partial0 = processed['mag_partial0'], 
-                    real_partial0 = processed['real_partial0'],
-                    imag_partial0 = processed['imag_partial0'],
-                    mag_partial1 = processed['mag_partial1'], 
-                    real_partial1 = processed['real_partial1'],
-                    imag_partial1 = processed['imag_partial1'],
-                    polar_full = processed['polar_full'],
-                    polar_partial0 = processed['polar_partial0'],
-                    polar_partial1 = processed['polar_partial1'])
-        else:
-            # processed = None
-            np.savez_compressed(save_path, all_point_x = all_point_x, all_point_y = all_point_y)
-        # 
-        
+
+        raw_data = get_scene_raw_data(all_point_x, all_point_y)
+        processed = get_radar_image_pairs(raw_data)
+        # raw_data0 = processed['raw0']
+        # print('raw data0 shape: ', raw_data0.shape)
+        # print()
+        np.savez_compressed(save_path, all_point_x = all_point_x, 
+                all_point_y = all_point_y,
+                polar_full = processed['polar_full'],
+                polar_partial_mag_phase = processed['polar_partial_mag_phase']
+
+                )
+
         if n % 100 == 0:
             print(n)
 
@@ -444,6 +385,3 @@ if __name__ == '__main__':
     # plt.title('xy locations for points')
 
     # plt.show()
-
-
-
