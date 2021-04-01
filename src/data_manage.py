@@ -108,7 +108,7 @@ def matplotlib_imshow(img, title = 'input'):
 
 if __name__ == '__main__':
     # import matplotlib.pyplot as plt
-    data_dir = os.path.join('cloud_data', 'moooo', 'train')
+    data_dir = os.path.join('cloud_data', 'moooo', 'val')
     net_input_name = 'polar_partial_mag_phase'
     target_name = 'polar_full'
     data_list = os.listdir(data_dir)
