@@ -21,8 +21,8 @@ class PointDataSet(data.Dataset):
     def __init__(self, data_dir, data_list, pre_processed = False):
         self.data_dir = data_dir
         self.data_list = data_list
-        self.net_input_name = net_input_name
-        self.target_name = target_name
+        # self.net_input_name = net_input_name
+        # self.target_name = target_name
         self.pre_processed = pre_processed
         # self.things_to_include = things_to_include
     def __len__(self):
