@@ -1,4 +1,9 @@
-import numpy as np 
+# Blessed Carlo Acutis, pray for us
+# St. Thomas Aquinas, pray for us
+# St. Ignatius Loyola, pray for us
+# St. Joseph, pray for us
+# St. Jude, pray for us
+# Holy Mary, Seat of Wisdom, pray for us
 import torch
 import json
 import copy
@@ -6,6 +11,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+from numpy.fft import fft, ifft, fftshift, ifftshift
 
 import torch.optim as optim
 import os
@@ -22,8 +28,9 @@ from torchsummary import summary
 from torch.utils.tensorboard import SummaryWriter
 
 import matplotlib.pyplot as plt
-import datagen
-from numpy.fft import fft, ifft
+import datagen_new as gen
+import image_transformation_utils as trans
+# from numpy.fft import fft, ifft
 
 if __name__ == '__main__':
     print('finished importing stuff')
@@ -44,8 +51,8 @@ if __name__ == '__main__':
     # data_list = os.listdir(data_dir)
     # data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)
 # import matplotlib.pyplot as plt
-    # data_dir = os.path.join('cloud_data', 'mooooo', 'debug')
-    data_dir = os.path.join('cloud_data', 'points', 'test')
+    data_dir = os.path.join('cloud_data', 'mooooo', 'debug')
+    # data_dir = os.path.join('cloud_data', 'points', 'test')
     net_input_name = 'polar_partial_mag_phase'
     target_name = 'polar_full'
     data_list = os.listdir(data_dir)[0:-1]
@@ -74,12 +81,12 @@ if __name__ == '__main__':
     ###############################################################################
     show_figs = True
     check_all = False
-    nums_examine = 6
+    nums_examine = 1
     nums_examined = 0
 
     mse = nn.MSELoss(reduction = 'mean')
     bce = nn.BCELoss(reduction = 'mean')
-    mydataset = mydata.PointDataSet(data_dir, data_list, pre_processed = False)
+    mydataset = mydata.PointDataSet(data_dir, data_list, pre_processed = True)
     mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= False, num_workers= 4)
     
     for batch_idx, sample in enumerate(mydataloader):
@@ -112,18 +119,60 @@ if __name__ == '__main__':
             # print(sample['y_points'])
             # display_data(target, target, net_input, target_name, net_input_name)
             print(mse(net_output, target))
-            plt.figure()
-            inputgrid = mydata.get_input_image_grid(net_input, net_input_name)
-            mydata.matplotlib_imshow(inputgrid, 'input')
-            plt.figure()
-            img_grid = mydata.get_output_target_image_grid(net_output, target, target_name)
-            mydata.matplotlib_imshow(img_grid, 'output and target')
+            # plt.figure()
+            # inputgrid = mydata.get_input_image_grid(net_input, net_input_name)
+            # mydata.matplotlib_imshow(inputgrid, 'input')
+            # plt.figure()
+            # img_grid = mydata.get_output_target_image_grid(net_output, target, target_name)
+            # mydata.matplotlib_imshow(img_grid, 'output and target')
             # print(inputgrid.size())
-            plt.show()
+            # plt.show()
         
         if nums_examined >= nums_examine:
             break
 
+    #####################################################################################
+    # check physics
+    #####################################################################################
+    print(sample['file_path'])
+    output_np = net_output.detach().numpy()
+    output_np = output_np[0, 0, :, :]
+    print('output size: ', output_np.shape)
+    print('output max: ', np.max(np.max(output_np)))
+    print('output min: ', np.min(np.min(output_np)))
+    my_target = sample[target_name]
+    my_target_np = my_target.detach().numpy()
+    my_target_np = my_target_np[0, 0, :, :]
+    print('target size: ', my_target_np.shape)
+    print('target max: ', np.max(np.max(my_target_np)))
+    print('target min: ', np.min(np.min(my_target_np)))
+
+    # output_thresholded = output_np * (output_np > 0.6)
+    # apply_threshold_per_row
+    thresholding_mtx = gen.apply_threshold_per_row(output_np, np.max(np.max(output_np))* 0.2, np.max(np.max(output_np)) * 0.4)
+    # plt.figure()
+    output_thresholded = output_np * thresholding_mtx
+
+    plt.figure()
+    plt.imshow(output_thresholded)
+    plt.title('output image thresholded')
+    plt.show()
+
+    # output_thresholded
+    # rng_vector = np.arange(gen.num_range_bins) * gen.rng_res
+    # output_rect, x, y = trans.polar_to_rect(output_thresholded, gen.wl, gen.num_channels, rng_vector, 512, 1024)
+    # plt.figure()
+    # plt.imshow(output_rect)
+    # plt.title('output image normal coord')
+    # plt.show()
+
+    # inputgrid = mydata.get_input_image_grid(net_input, net_input_name)
+    # mydata.matplotlib_imshow(inputgrid, 'input')
+    # plt.figure()
+    # img_grid = mydata.get_output_target_image_grid(net_output, target, target_name)
+    # mydata.matplotlib_imshow(img_grid, 'output and target')
+    # # print(inputgrid.size())
+    # plt.show()
         ##################################################################################
         # check the data process
         ##################################################################################

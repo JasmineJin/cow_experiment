@@ -39,10 +39,16 @@ class PointDataSet(data.Dataset):
         x_points = npzfile['all_point_x']
         # print(x_points)
         y_points = npzfile['all_point_y']
+        if  self.pre_processed:
 
-        mydata['polar_full'] = torch.from_numpy(npzfile['polar_full']).type(torch.float)
-        mydata['polar_partial_mag_phase'] = torch.from_numpy(npzfile['polar_partial_mag_phase']).type(torch.float)
-        
+            mydata['polar_full'] = torch.from_numpy(npzfile['polar_full']).type(torch.float)
+            mydata['polar_partial_mag_phase'] = torch.from_numpy(npzfile['polar_partial_mag_phase']).type(torch.float)
+        else:
+            # processed = gen.pro
+            raw_data = gen.get_scene_raw_data(x_points, y_points)
+            processed = gen.get_radar_image_pairs(raw_data)
+            mydata['polar_full'] = torch.from_numpy(processed['polar_full']).type(torch.float)
+            mydata['polar_partial_mag_phase'] = torch.from_numpy(processed['polar_partial_mag_phase']).type(torch.float)
         return mydata
 
 def norm01(data):
