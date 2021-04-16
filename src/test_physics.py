@@ -51,11 +51,11 @@ if __name__ == '__main__':
     # data_list = os.listdir(data_dir)
     # data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)
 # import matplotlib.pyplot as plt
-    data_dir = os.path.join('cloud_data', 'mooooo', 'debug')
-    # data_dir = os.path.join('cloud_data', 'points', 'test')
+    # data_dir = os.path.join('cloud_data', 'mooooo', 'debug')
+    data_dir = os.path.join('cloud_data', 'points', 'test')
     net_input_name = 'polar_partial_mag_phase'
     target_name = 'polar_full'
-    data_list = os.listdir(data_dir)[0:-1]
+    data_list = os.listdir(data_dir)[1:-1]
     # ################################################################################
     # # check data statistics
     # ################################################################################
@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
     mse = nn.MSELoss(reduction = 'mean')
     bce = nn.BCELoss(reduction = 'mean')
-    mydataset = mydata.PointDataSet(data_dir, data_list, pre_processed = True)
+    mydataset = mydata.PointDataSet(data_dir, data_list, pre_processed = False)
     mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= False, num_workers= 4)
     
     for batch_idx, sample in enumerate(mydataloader):
@@ -135,6 +135,7 @@ if __name__ == '__main__':
     # check physics
     #####################################################################################
     print(sample['file_path'])
+    net_output = mydata.norm01(net_output)
     output_np = net_output.detach().numpy()
     output_np = output_np[0, 0, :, :]
     print('output size: ', output_np.shape)
@@ -158,6 +159,34 @@ if __name__ == '__main__':
     plt.title('output image thresholded')
     plt.show()
 
+    output_norm2target = output_thresholded * (np.max(np.max(my_target_np)) - np.min(np.min(my_target_np))) + np.min(np.min(my_target_np))
+    print('re-normalized output min: ', np.min(np.min(output_norm2target)))
+    print('re-normalized output max: ', np.max(np.max(output_norm2target)))
+
+
+    output_exp = np.exp(output_norm2target * np.log(10))
+    plt.figure()
+    plt.imshow(output_exp)
+    plt.title('output image exponentiated')
+    plt.show()
+
+    actual_raw_data = sample['raw_data']
+    actual_raw_data = actual_raw_data.numpy()[0, :, :]
+
+    
+    print('actual raw data shape: ', actual_raw_data.shape)
+    # range_processed = fft(np.dot(range_window_mtx, array_response), axis = 0, norm= 'ortho')
+    angle_unprocessed = ifft(output_exp, n = gen.num_channels, axis= 1, norm = 'ortho')
+    range_unprocessed = ifft(angle_unprocessed, n = gen.num_channels, axis= 0, norm = 'ortho')
+    # print("my output exponentiated")
+    print('fake raw data shape: ', range_unprocessed.shape)
+
+    actual_raw_data_squared = np.abs(actual_raw_data) * np.abs(actual_raw_data)
+    fake_raw_data_squared = np.abs(range_unprocessed) * np.abs(range_unprocessed)
+    print('actual raw data energy: ', np.sum(np.sum(actual_raw_data_squared)))
+    print('fake raw data energy: ', np.sum(np.sum(fake_raw_data_squared)))
+
+    
     # output_thresholded
     # rng_vector = np.arange(gen.num_range_bins) * gen.rng_res
     # output_rect, x, y = trans.polar_to_rect(output_thresholded, gen.wl, gen.num_channels, rng_vector, 512, 1024)

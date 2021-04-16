@@ -47,6 +47,7 @@ class PointDataSet(data.Dataset):
             # processed = gen.pro
             raw_data = gen.get_scene_raw_data(x_points, y_points)
             processed = gen.get_radar_image_pairs(raw_data)
+            mydata['raw_data'] = raw_data
             mydata['polar_full'] = torch.from_numpy(processed['polar_full']).type(torch.float)
             mydata['polar_partial_mag_phase'] = torch.from_numpy(processed['polar_partial_mag_phase']).type(torch.float)
         return mydata
@@ -114,7 +115,8 @@ def matplotlib_imshow(img, title = 'input'):
 
 if __name__ == '__main__':
     # import matplotlib.pyplot as plt
-    data_dir = os.path.join('cloud_data', 'moooo', 'val')
+    # data_dir = os.path.join('cloud_data', 'moooo', 'val')
+    data_dir = os.path.join('cloud_data', 'hard', 'debug')
     net_input_name = 'polar_partial_mag_phase'
     target_name = 'polar_full'
     data_list = os.listdir(data_dir)
@@ -144,7 +146,7 @@ if __name__ == '__main__':
     ###############################################################################
     show_figs = True
     check_all = False
-    nums_examine = 2
+    nums_examine = 5
     nums_examined = 0
 
     mse = nn.MSELoss(reduction = 'sum')

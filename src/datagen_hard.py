@@ -258,9 +258,25 @@ if __name__ == '__main__':
         all_point_x = []
         all_point_y = []
         
+        # make hard stuff
         num_objects = args.max_num_points#np.random.randint(1, args.max_num_points)
-        
-        for i in range(num_objects):
+        start_x = np.random.rand() * 2 * max_rng - max_rng
+        start_y = np.random.rand() * max_rng
+        point_x, point_y = get_vline(start_x, start_y, 75)
+        all_point_x = np.hstack([all_point_x, point_x])
+        all_point_y = np.hstack([all_point_y, point_y])
+
+        line_min_rng = np.sqrt(start_x ** 2 + start_y **2)
+
+        point_rng = line_min_rng + np.random.rand() * 50 * rng_res
+        point_ang = np.random.rand() * np.pi - np.pi / 2
+        point_x = (np.cos(point_ang) * point_rng)
+        point_y = np.sin(point_ang) * point_rng
+
+        all_point_x = np.hstack([all_point_x, point_x])
+        all_point_y = np.hstack([all_point_y, point_y])
+
+        for i in range(num_objects-2):
             if args.sample_type == 'mix':
                 a = np.random.rand()
                 if a < 0.5:
@@ -282,7 +298,7 @@ if __name__ == '__main__':
             all_point_x = np.hstack([all_point_x, point_x])
             all_point_y = np.hstack([all_point_y, point_y])
 
-        scene_name = args.sample_type + '_' + str(num_objects) +'_objects_'+ str(n) + '.npz'
+        scene_name = args.sample_type + 'co_range_' + str(num_objects) +'_objects_'+ str(n) + '.npz'
         save_path = os.path.join(data_dir, scene_name)
 
         raw_data = get_scene_raw_data(all_point_x, all_point_y)
