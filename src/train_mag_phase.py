@@ -116,10 +116,10 @@ if __name__ == '__main__':
     #########################################################################
     if args.loss_type == 'mse':
         myloss = nn.MSELoss(reduction = args.reduction)
-    elif args.loss_type == 'log_mse':
+    elif args.loss_type == 'norm_mse':
         mse = nn.MSELoss(reduction = args.reduction)
         def myloss(output, target):
-            return torch.log10(mse(output, target)) #+ 0.0001 * torch.sum(torch.abs(output))
+            return mse(output, target) / torch.sum(torch.abs(target)) #+ 0.0001 * torch.sum(torch.abs(output))
     elif args.loss_type == 'log_bce':
         bce = nn.BCELoss(reduction = args.reduction)
         def myloss(output, target):

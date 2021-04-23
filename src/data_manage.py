@@ -113,6 +113,36 @@ def matplotlib_imshow(img, title = 'input'):
     plt.imshow(img_np[0, :, :], cmap = 'gray')
     plt.title(title)
 
+def plot_labeled_grid(net_input, output, target):
+    target = target.cpu().detach()
+    output = output.cpu().detach()
+    output_np = output[0, 0, :, :]
+    target_np = target[0, 0, :, :]
+
+    net_input = net_input.cpu().detach()
+    # if net_input_name == 'polar_partial_mag_phase':
+    real0 = net_input[0, 0, :, :]
+    imag0 = net_input[0, 1, :, :]
+    mag0 = np.abs(real0 + 1j * imag0)
+    input0 = mag0
+    real1 = net_input[0, 2, :, :]
+    imag1 = net_input[0, 3, :, :]
+    mag1 = np.abs(real1 + 1j * imag1)
+    input1 = mag1
+
+    extent = [-1, 1, 0, gen.max_rng]
+
+    fig, axs = plt.subplots(2, 2)
+    axs[0, 0].imshow(target_np,  extent = extent, origin= 'upper', aspect = 'auto', cmap = 'gray')
+    axs[0, 0].set_title('target')
+    axs[1, 0].imshow(output_np, extent = extent, origin= 'upper', aspect = 'auto', cmap = 'gray')
+    axs[1, 0].set_title('net output')
+    axs[0, 1].imshow(input0, extent = extent, origin= 'upper', aspect = 'auto', cmap = 'gray')
+    axs[0, 1].set_title('net input 0')
+    axs[1, 1].imshow(input1, extent = extent, origin= 'upper', aspect = 'auto', cmap = 'gray')
+    axs[1,1].set_title('net input 1')
+
+
 if __name__ == '__main__':
     # import matplotlib.pyplot as plt
     # data_dir = os.path.join('cloud_data', 'moooo', 'val')
@@ -188,11 +218,12 @@ if __name__ == '__main__':
             # print(sample['y_points'])
             # display_data(target, target, net_input, target_name, net_input_name)
             plt.figure()
-            inputgrid = get_input_image_grid(net_input, net_input_name)
-            matplotlib_imshow(inputgrid, 'input')
-            plt.figure()
-            img_grid = get_output_target_image_grid(target, target, target_name)
-            matplotlib_imshow(img_grid, 'target')
+            plot_labeled_grid(net_input, target, target)
+            # inputgrid = get_input_image_grid(net_input, net_input_name)
+            # matplotlib_imshow(inputgrid, 'input')
+            # plt.figure()
+            # img_grid = get_output_target_image_grid(target, target, target_name)
+            # matplotlib_imshow(img_grid, 'target')
             # print(inputgrid.size())
             plt.show()
         

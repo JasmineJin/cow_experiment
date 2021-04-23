@@ -29,10 +29,10 @@ if __name__ == '__main__':
     print('finished importing stuff')
     device = torch.device('cpu')
     # model_path = 'single_point1000x100_autoencoder_newmodel_small_polar.pt'
-    model_path = 'points_polar_phase_mag_phase_polar_small_bce.pt' # last trained on 1000 things just points see 3/26
+    # model_path = 'points_polar_phase_mag_phase_polar_small_bce.pt' # last trained on 1000 things just points see 3/26
     # model_path = 'points_polar_phase_10000x100_mag_phase_polar_big.pt' # last trained on 10000 things, see 4/5
     # model_path = 'points_polar_phase_10000x100_mag_phase_polar_big_bce.pt' # same as the above but bce loss not sure how many epochs i trained this on
-    # model_path = 'fine_tune_polar_phase_fine_tune_pre_trained0.pt' # fine tuned with hard examples
+    model_path = 'fine_tune_polar_phase_fine_tune_pre_trained0.pt' # fine tuned with hard examples
     # model_path = os.path.join('models_trained', 'point_model2d_final.pt')
     model = torch.load(model_path, map_location=device)
     model.to(device)
@@ -47,8 +47,9 @@ if __name__ == '__main__':
     # data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)
 # import matplotlib.pyplot as plt
     # data_dir = os.path.join('cloud_data', 'mooooo', 'debug') # half points half vline
-    data_dir = os.path.join('cloud_data', 'points', 'test') # just points
-    # data_dir = os.path.join('cloud_data', 'hard', 'debug') # a vline with a point next to it
+    # data_dir = os.path.join('cloud_data', 'points', 'test') # just points
+    # data_dir = os.path.join('cloud_data', 'testing', 'just_points') # a vline with a point next to it
+    data_dir = os.path.join('cloud_data', 'testing', 'mixed_stuff')
     net_input_name = 'polar_partial_mag_phase'
     target_name = 'polar_full'
     data_list = os.listdir(data_dir)[0:-1]
@@ -77,34 +78,19 @@ if __name__ == '__main__':
     ###############################################################################
     show_figs = True
     check_all = False
-    nums_examine = 6
+    nums_examine = 100
     nums_examined = 0
 
-    mse = nn.MSELoss(reduction = 'mean')
+    mse = nn.MSELoss(reduction = 'sum')
     bce = nn.BCELoss(reduction = 'mean')
-    mydataset = mydata.PointDataSet(data_dir, data_list, pre_processed = False)
+    mydataset = mydata.PointDataSet(data_dir, data_list, pre_processed = True)
     mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= False, num_workers= 4)
-    
+    total_error = 0
     for batch_idx, sample in enumerate(mydataloader):
-        # for name in sample:
-        #     print(name)
-        #     thing = sample[name]
-        #     if name == net_input_name or name == target_name:
-        #         # print(name)
-        #         print('size: ', thing.size())
-        #         print('minimum value: ', torch.min(thing))
-        #         print('maximum value: ', torch.max(thing))
-        #         print('average value: ', torch.mean(thing))
-        #         print('variance: ', torch.var(thing))
-        #         zero_tensor = torch.zeros(thing.size())
-        #         # print('0:', torch.sum(zero_tensor))
-        #         mynorm = mse(thing, zero_tensor)
-        #         print('sum abs squared: ', mynorm.item())
-        #     else:
-        #         print(thing)
-        nums_examined += 1
-        print(nums_examined)
-        if show_figs:
+        # nums_examined += 1
+        # print(nums_examined)
+        if nums_examined % 20 == 0:
+            print(sample['file_path'])
             target = sample[target_name]
             target = mydata.norm01(target)
             net_input = sample[net_input_name]
@@ -114,8 +100,11 @@ if __name__ == '__main__':
             # print(sample['x_points'])
             # print(sample['y_points'])
             # display_data(target, target, net_input, target_name, net_input_name)
-            print(mse(net_output, target))
-            plt.figure()
+            loss = mse(net_output, target)
+            loss = loss / torch.sum(torch.abs(target))
+            print(loss)
+            total_error += loss.item()
+            # plt.figure()
             mydata.plot_labeled_grid(net_input, net_output, target)
             # inputgrid = mydata.get_input_image_grid(net_input, net_input_name)
             # mydata.matplotlib_imshow(inputgrid, 'input')
@@ -124,62 +113,8 @@ if __name__ == '__main__':
             # mydata.matplotlib_imshow(img_grid, 'output and target')
             # print(inputgrid.size())
             plt.show()
-        
-        if nums_examined >= nums_examine:
-            break
+        nums_examined += 1
+        # if nums_examined >= nums_examine:
+        #     break
 
-        ##################################################################################
-        # check the data process
-        ##################################################################################
-    
-    # #######################################################
-    # # test quantizer
-    # #######################################################
-    # mydata = np.linspace(-1, 11, num = 500)
-    # q_mydata = datagen.quantizer(mydata, low = 0, high = 9, n_levels = 5)
-
-    # plt.figure()
-    # plt.plot(mydata, q_mydata)
-    # plt.show()
-
-    # show_figs = True
-    # nums_examine = 10
-    # nums_examined = 0
-
-    # # mse = nn.MSELoss(reduction = 'sum')
-    # # print('cool')
-    # mydataset = mydata.PointDataSet(data_dir, data_list, net_input_name, target_name)
-    # mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= False, num_workers=1)
-    # print('cool')
-
-    # for batch_idx, sample in enumerate(mydataloader):
-    #     print('started loading')
-    #     for name in sample:
-    #         print(name)
-    #         thing = sample[name]
-    #     nums_examined += 1
-    #     print(nums_examined)
-    #     if show_figs:
-    #         print('showing ', sample['file_path'])
-    #         target = sample[target_name]
-    #         target = mydata.norm01(target)
-    #         target.to(device)
-    #         # net_input = sample[target_name]
-    #         # net_input.to(device)
-    #         net_output = model(target)
-    #         # print(sample['x_points'])
-    #         # print(sample['y_points'])
-
-    #         # mydata.display_data(target, net_output, net_input, target_name, net_input_name)
-    #         # plt.figure()
-    #         # inputgrid = mydata.get_input_image_grid(net_input, net_input_name)
-    #         # mydata.matplotlib_imshow(inputgrid, 'input')
-    #         plt.figure()
-    #         img_grid = mydata.get_output_target_image_grid(net_output, target, target_name)
-    #         mydata.matplotlib_imshow(img_grid, 'output and target')
-    #         # print(inputgrid.size())
-    #         plt.show()
-    #         # plt.show()
-        
-    #     if nums_examined >= nums_examine:
-    #         break
+    print('average se: ', total_error / nums_examine)
