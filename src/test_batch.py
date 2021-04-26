@@ -29,15 +29,15 @@ if __name__ == '__main__':
     print('finished importing stuff')
     device = torch.device('cpu')
     # model_path = 'single_point1000x100_autoencoder_newmodel_small_polar.pt'
-    model_path = 'points_polar_phase_mag_phase_polar_small_bce.pt' # last trained on 1000 things just points see 3/26
-    # model_path = 'points_polar_phase_10000x100_mag_phase_polar_big.pt' # last trained on 10000 things, see 4/5
+    # model_path = 'points_polar_phase_mag_phase_polar_small_bce.pt' # last trained on 1000 things just points see 3/26
+    model_path = 'points_polar_phase_10000x100_mag_phase_polar_big.pt' # last trained on 10000 things, see 4/5
     # model_path = 'points_polar_phase_10000x100_mag_phase_polar_big_bce.pt' # same as the above but bce loss not sure how many epochs i trained this on
     # model_path = 'fine_tune_polar_phase_fine_tune_pre_trained0.pt' # fine tuned with hard examples
     # model_path = os.path.join('models_trained', 'point_model2d_final.pt')
     model = torch.load(model_path, map_location=device)
     model.to(device)
     # model.train()
-    print('loaded model')
+    print('loaded model: ' + model_path)
     # print(model)
 
     # data_dir = os.path.join('../cloud_data', 'points', 'train')
@@ -48,8 +48,10 @@ if __name__ == '__main__':
 # import matplotlib.pyplot as plt
     # data_dir = os.path.join('cloud_data', 'mooooo', 'debug') # half points half vline
     # data_dir = os.path.join('cloud_data', 'points', 'test') # just points
+    data_dir = os.path.join('cloud_data', 'testing', 'single_points')
+    print('data directory: ', data_dir)
     # data_dir = os.path.join('cloud_data', 'testing', 'just_points') # a vline with a point next to it
-    data_dir = os.path.join('cloud_data', 'testing', 'mixed_stuff')
+    # data_dir = os.path.join('cloud_data', 'testing', 'mixed_stuff')
     net_input_name = 'polar_partial_mag_phase'
     target_name = 'polar_full'
     data_list = os.listdir(data_dir)[0:-1]
