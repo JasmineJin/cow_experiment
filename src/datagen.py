@@ -9,8 +9,8 @@ import scipy as sp
 import image_transformation_utils as trans
 ##############################################################################################
 # global constants
-num_range_bins = 256
-num_channels = 512
+num_range_bins = 512
+num_channels = 1024
 wl= (299.792458 / 77) * 0.001
 num_samples = 16
 center_freq = 77 * 10 ** 9
@@ -219,58 +219,98 @@ def get_random_point(num_points):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import argparse
+    np.random.seed(1)
+    gt_range = np.array([20])
+    gt_aoa = np.array([0.5])
+    all_point_x = gt_range * np.cos(gt_aoa)
+    all_point_y = gt_range * np.sin(gt_aoa)
+    # print(len(all_point_x))
+    array_response = get_scene_raw_data(all_point_x, all_point_y)
 
-    parser = argparse.ArgumentParser(description='set mode for data generation')
-    parser.add_argument('--mode', type = str, default = 'val')
-    parser.add_argument('--sample_type',type = str, default = 'points' )
-    parser.add_argument('--max_num_points', type = int, default = 1)
-    parser.add_argument('--num_samples', type = int, default = 10)
-    parser.add_argument('--sample_name', type = str, default = '')
-    args = parser.parse_args()
+    range_window = np.hanning(num_range_bins)
+    range_window_mtx = np.diag(range_window)
 
-    mode = args.mode
-    max_num_points = args.max_num_points
-    num_samples = args.num_samples
-    print(mode)
-    print(max_num_points)
-    print(num_samples)
-    pre_processed = True
+    num_channels_to_process = array_response.shape[1]
+    channel_window = np.hanning(num_channels_to_process)
+    channel_window_mtx = np.diag(channel_window)
 
-    data_dir = os.path.join('cloud_data', args.sample_type, mode)
-    os.makedirs(data_dir, exist_ok = True)
+    range_processed = fft(np.dot(range_window_mtx, array_response), axis = 0, norm= 'ortho')
+    processed = range_processed
+    # processed = process_array(array_response)
+    # processed_array = processed[]
+    one_antenna = processed[:, 512]
+    one_antenna_log = 20 * np.log10(np.abs(one_antenna))
+    rng_vector = np.arange(num_range_bins) * rng_res
+    plt.figure()
+    plt.plot(rng_vector, one_antenna_log)
+    plt.xlabel('range')
+    plt.ylabel('dB')
+    plt.show()
+    gt_range = np.sqrt(all_point_x[0]**2 +  all_point_y[0] ** 2)
+    print('ground truth range: ', gt_range)
+    angle_processed = process_array(array_response)
+    one_range = angle_processed[256, :]
+    one_range_log = 20 * np.log10(np.abs(one_range))
+    angle_vector = np.linspace(-1, 1, num_channels)
+    plt.figure()
+    plt.plot(angle_vector, one_range_log)
+    plt.xlabel('cos(AoA)')
+    plt.ylabel('dB')
+    plt.show()
+    gt_aoa = all_point_x[0]/ gt_range
+    print('ground truth cos(aoa): ', gt_aoa)
 
-    for n in range(num_samples):
-        if args.sample_type == 'points':
-            all_point_x, all_point_y = get_random_point(args.max_num_points)
-        elif args.sample_type == 'vline':
-            all_point_x, all_point_y = get_vline()
+    # parser = argparse.ArgumentParser(description='set mode for data generation')
+    # parser.add_argument('--mode', type = str, default = 'val')
+    # parser.add_argument('--sample_type',type = str, default = 'points' )
+    # parser.add_argument('--max_num_points', type = int, default = 1)
+    # parser.add_argument('--num_samples', type = int, default = 10)
+    # parser.add_argument('--sample_name', type = str, default = '')
+    # args = parser.parse_args()
 
-        scene_name = args.sample_name + '_' + str(n) + '.npz'
-        save_path = os.path.join(data_dir, scene_name)
-        if pre_processed:
-            raw_data = get_scene_raw_data(all_point_x, all_point_y)
-            processed = get_radar_image_pairs(raw_data)
-            np.savez_compressed(save_path, all_point_x = all_point_x, 
-                                            all_point_y = all_point_y,
-                                            mag_full = processed['mag_full'], 
-                                            real_full = processed['real_full'],
-                                            imag_full = processed['imag_full'],
-                                            mag_partial0 = processed['mag_partial0'], 
-                                            real_partial0 = processed['real_partial0'],
-                                            imag_partial0 = processed['imag_partial0'],
-                                            mag_partial1 = processed['mag_partial1'], 
-                                            real_partial1 = processed['real_partial1'],
-                                            imag_partial1 = processed['imag_partial1'],
-                                            polar_full = processed['polar_full'],
-                                            polar_partial0 = processed['polar_partial0'],
-                                            polar_partial1 = processed['polar_partial1'])
-        else:
-            # processed = None
-            np.savez_compressed(save_path, all_point_x = all_point_x, all_point_y = all_point_y)
-        # 
+    # mode = args.mode
+    # max_num_points = args.max_num_points
+    # num_samples = args.num_samples
+    # print(mode)
+    # print(max_num_points)
+    # print(num_samples)
+    # pre_processed = True
+
+    # data_dir = os.path.join('cloud_data', args.sample_type, mode)
+    # os.makedirs(data_dir, exist_ok = True)
+
+    # for n in range(num_samples):
+    #     if args.sample_type == 'points':
+    #         all_point_x, all_point_y = get_random_point(args.max_num_points)
+    #     elif args.sample_type == 'vline':
+    #         all_point_x, all_point_y = get_vline()
+
+    #     scene_name = args.sample_name + '_' + str(n) + '.npz'
+    #     save_path = os.path.join(data_dir, scene_name)
+    #     if pre_processed:
+    #         raw_data = get_scene_raw_data(all_point_x, all_point_y)
+    #         processed = get_radar_image_pairs(raw_data)
+    #         np.savez_compressed(save_path, all_point_x = all_point_x, 
+    #                                         all_point_y = all_point_y,
+    #                                         mag_full = processed['mag_full'], 
+    #                                         real_full = processed['real_full'],
+    #                                         imag_full = processed['imag_full'],
+    #                                         mag_partial0 = processed['mag_partial0'], 
+    #                                         real_partial0 = processed['real_partial0'],
+    #                                         imag_partial0 = processed['imag_partial0'],
+    #                                         mag_partial1 = processed['mag_partial1'], 
+    #                                         real_partial1 = processed['real_partial1'],
+    #                                         imag_partial1 = processed['imag_partial1'],
+    #                                         polar_full = processed['polar_full'],
+    #                                         polar_partial0 = processed['polar_partial0'],
+    #                                         polar_partial1 = processed['polar_partial1'])
+    #     else:
+    #         # processed = None
+    #         np.savez_compressed(save_path, all_point_x = all_point_x, all_point_y = all_point_y)
+    #     # 
         
-        if n % 100 == 0:
-            print(n)
+    #     if n % 100 == 0:
+    #         print(n)
 
 
     # for num_points in range(1, max_num_points + 1):

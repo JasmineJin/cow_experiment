@@ -39,6 +39,8 @@ class PointDataSet(data.Dataset):
         x_points = npzfile['all_point_x']
         # print(x_points)
         y_points = npzfile['all_point_y']
+        mydata['points_x'] = x_points
+        mydata['points_y'] = y_points
         if  self.pre_processed:
 
             mydata['polar_full'] = torch.from_numpy(npzfile['polar_full']).type(torch.float)
@@ -133,20 +135,22 @@ def plot_labeled_grid(net_input, output, target):
     extent = [-1, 1, 0, gen.max_rng]
 
     fig, axs = plt.subplots(2, 2)
-    axs[0, 0].imshow(target_np,  extent = extent, origin= 'upper', aspect = 'auto', cmap = 'gray')
+    axs[0, 0].imshow(target_np,  extent = extent, origin= 'lower', aspect = 'auto', cmap = 'gray')
     axs[0, 0].set_title('target')
-    axs[1, 0].imshow(output_np, extent = extent, origin= 'upper', aspect = 'auto', cmap = 'gray')
+    axs[1, 0].imshow(output_np, extent = extent, origin= 'lower', aspect = 'auto', cmap = 'gray')
     axs[1, 0].set_title('net output')
-    axs[0, 1].imshow(input0, extent = extent, origin= 'upper', aspect = 'auto', cmap = 'gray')
+    axs[0, 1].imshow(input0, extent = extent, origin= 'lower', aspect = 'auto', cmap = 'gray')
     axs[0, 1].set_title('net input 0')
-    axs[1, 1].imshow(input1, extent = extent, origin= 'upper', aspect = 'auto', cmap = 'gray')
+    axs[1, 1].imshow(input1, extent = extent, origin= 'lower', aspect = 'auto', cmap = 'gray')
     axs[1,1].set_title('net input 1')
+
+    # def plot_just_target()
 
 
 if __name__ == '__main__':
     # import matplotlib.pyplot as plt
     # data_dir = os.path.join('cloud_data', 'moooo', 'val')
-    data_dir = os.path.join('cloud_data', 'hard', 'debug')
+    data_dir = os.path.join('cloud_data', 'testing', 'single_points')
     net_input_name = 'polar_partial_mag_phase'
     target_name = 'polar_full'
     data_list = os.listdir(data_dir)
@@ -176,7 +180,7 @@ if __name__ == '__main__':
     ###############################################################################
     show_figs = True
     check_all = False
-    nums_examine = 5
+    nums_examine = 2
     nums_examined = 0
 
     mse = nn.MSELoss(reduction = 'sum')
@@ -217,8 +221,23 @@ if __name__ == '__main__':
             # print(sample['x_points'])
             # print(sample['y_points'])
             # display_data(target, target, net_input, target_name, net_input_name)
+            # plt.figure()
+            output = torch.ones(target.size())
+            # plot_labeled_grid(net_input, output, target)
             plt.figure()
-            plot_labeled_grid(net_input, target, target)
+            target = target.cpu().detach()
+            output = output.cpu().detach()
+            output_np = output[0, 0, :, :]
+            target_np = target[0, 0, :, :]
+            extent = [-1, 1, 0, gen.max_rng]
+            plt.imshow(target_np, extent = extent, origin= 'lower', aspect = 'auto', cmap = 'gray')
+            plt.xlabel('cos(AoA)')
+            plt.ylabel('range (m)')
+            gt_range = np.sqrt(sample['points_x'] * sample['points_x'] + sample['points_y'] * sample['points_y'])
+
+            gt_angle = sample['points_x'] / gt_range
+
+            print(gt_range, gt_angle)
             # inputgrid = get_input_image_grid(net_input, net_input_name)
             # matplotlib_imshow(inputgrid, 'input')
             # plt.figure()

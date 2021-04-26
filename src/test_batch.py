@@ -29,10 +29,10 @@ if __name__ == '__main__':
     print('finished importing stuff')
     device = torch.device('cpu')
     # model_path = 'single_point1000x100_autoencoder_newmodel_small_polar.pt'
-    # model_path = 'points_polar_phase_mag_phase_polar_small_bce.pt' # last trained on 1000 things just points see 3/26
+    model_path = 'points_polar_phase_mag_phase_polar_small_bce.pt' # last trained on 1000 things just points see 3/26
     # model_path = 'points_polar_phase_10000x100_mag_phase_polar_big.pt' # last trained on 10000 things, see 4/5
     # model_path = 'points_polar_phase_10000x100_mag_phase_polar_big_bce.pt' # same as the above but bce loss not sure how many epochs i trained this on
-    model_path = 'fine_tune_polar_phase_fine_tune_pre_trained0.pt' # fine tuned with hard examples
+    # model_path = 'fine_tune_polar_phase_fine_tune_pre_trained0.pt' # fine tuned with hard examples
     # model_path = os.path.join('models_trained', 'point_model2d_final.pt')
     model = torch.load(model_path, map_location=device)
     model.to(device)
@@ -89,22 +89,26 @@ if __name__ == '__main__':
     for batch_idx, sample in enumerate(mydataloader):
         # nums_examined += 1
         # print(nums_examined)
+        
+        
+        target = sample[target_name]
+        target = mydata.norm01(target)
+        net_input = sample[net_input_name]
+        # net_input = mydata.norm01(net_input)
+        net_output = model(net_input)
+
+        # print(sample['x_points'])
+        # print(sample['y_points'])
+        # display_data(target, target, net_input, target_name, net_input_name)
+        loss = mse(net_output, target)
+        # loss = loss / torch.sum(torch.abs(target))
+        
+        total_error += loss.item()
+        # plt.figure()
         if nums_examined % 20 == 0:
             print(sample['file_path'])
-            target = sample[target_name]
-            target = mydata.norm01(target)
-            net_input = sample[net_input_name]
-            # net_input = mydata.norm01(net_input)
-            net_output = model(net_input)
-
-            # print(sample['x_points'])
-            # print(sample['y_points'])
-            # display_data(target, target, net_input, target_name, net_input_name)
-            loss = mse(net_output, target)
-            loss = loss / torch.sum(torch.abs(target))
             print(loss)
-            total_error += loss.item()
-            # plt.figure()
+
             mydata.plot_labeled_grid(net_input, net_output, target)
             # inputgrid = mydata.get_input_image_grid(net_input, net_input_name)
             # mydata.matplotlib_imshow(inputgrid, 'input')
