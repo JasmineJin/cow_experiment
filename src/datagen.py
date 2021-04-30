@@ -219,20 +219,16 @@ def get_random_point(num_points):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import argparse
-    np.random.seed(1)
+    # np.random.seed(1)
     gt_range = np.array([20])
-    gt_aoa = np.array([0.5])
-    all_point_x = gt_range * np.cos(gt_aoa)
-    all_point_y = gt_range * np.sin(gt_aoa)
+    gt_aoa = np.array([0.35, 0.5])
+    all_point_x = gt_range * gt_aoa
+    all_point_y = gt_range * np.sqrt(1 - gt_aoa * gt_aoa)
     # print(len(all_point_x))
     array_response = get_scene_raw_data(all_point_x, all_point_y)
 
     range_window = np.hanning(num_range_bins)
     range_window_mtx = np.diag(range_window)
-
-    num_channels_to_process = array_response.shape[1]
-    channel_window = np.hanning(num_channels_to_process)
-    channel_window_mtx = np.diag(channel_window)
 
     range_processed = fft(np.dot(range_window_mtx, array_response), axis = 0, norm= 'ortho')
     processed = range_processed
@@ -247,8 +243,9 @@ if __name__ == '__main__':
     plt.ylabel('dB')
     plt.show()
     gt_range = np.sqrt(all_point_x[0]**2 +  all_point_y[0] ** 2)
+
     print('ground truth range: ', gt_range)
-    angle_processed = process_array(array_response)
+    angle_processed = process_array(array_response[:, 0:12])
     one_range = angle_processed[256, :]
     one_range_log = 20 * np.log10(np.abs(one_range))
     angle_vector = np.linspace(-1, 1, num_channels)

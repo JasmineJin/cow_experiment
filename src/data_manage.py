@@ -115,6 +115,34 @@ def matplotlib_imshow(img, title = 'input'):
     plt.imshow(img_np[0, :, :], cmap = 'gray')
     plt.title(title)
 
+def plot_just_input_grid(net_input):
+    net_input = net_input.cpu().detach()
+    # if net_input_name == 'polar_partial_mag_phase':
+    real0 = net_input[0, 0, :, :]
+    imag0 = net_input[0, 1, :, :]
+    mag0 = np.abs(real0 + 1j * imag0)
+    input0 = mag0
+    real1 = net_input[0, 2, :, :]
+    imag1 = net_input[0, 3, :, :]
+    mag1 = np.abs(real1 + 1j * imag1)
+    input1 = mag1
+    extent = [-1, 1, 0, gen.max_rng]
+
+    fig, axs = plt.subplots(1, 2)
+    axs[0].imshow(input0,  extent = extent, origin= 'lower', aspect = 'auto', cmap = 'gray')
+    axs[0].set_title('Input 0')
+    axs[0].set_xlabel('cos(AoA)')
+    axs[0].set_ylabel('range (m)')
+    axs[1].imshow(input1, extent = extent, origin= 'lower', aspect = 'auto', cmap = 'gray')
+    axs[1].set_title('Input 1')
+    axs[1].set_xlabel('cos(AoA)')
+    axs[1].set_ylabel('range (m)')
+
+    # input0_tensor = input0.unsqueeze(0)
+    # input1_tensor = input1.unsqueeze(0)
+    # inputgrid = torchvision.utils.make_grid([input0_tensor, input1_tensor], padding = 20, pad_value = 1)
+
+    # return inputgrid
 def plot_labeled_grid(net_input, output, target):
     target = target.cpu().detach()
     output = output.cpu().detach()
@@ -226,6 +254,7 @@ if __name__ == '__main__':
             target = norm01(target)
             net_input = sample[net_input_name]
             net_input = norm01(net_input)
+            plot_just_input_grid(net_input)
             # print(sample['x_points'])
             # print(sample['y_points'])
             # display_data(target, target, net_input, target_name, net_input_name)
@@ -241,11 +270,11 @@ if __name__ == '__main__':
             plt.imshow(target_np, extent = extent, origin= 'lower', aspect = 'auto', cmap = 'gray')
             plt.xlabel('cos(AoA)')
             plt.ylabel('range (m)')
-            gt_range = np.sqrt(sample['points_x'] * sample['points_x'] + sample['points_y'] * sample['points_y'])
 
-            gt_angle = sample['points_x'] / gt_range
 
-            print(gt_range, gt_angle)
+            # gt_angle = sample['points_x'] / gt_range
+
+            # print(gt_range, gt_angle)
             # inputgrid = get_input_image_grid(net_input, net_input_name)
             # matplotlib_imshow(inputgrid, 'input')
             # plt.figure()

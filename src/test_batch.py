@@ -48,10 +48,10 @@ if __name__ == '__main__':
 # import matplotlib.pyplot as plt
     # data_dir = os.path.join('cloud_data', 'mooooo', 'debug') # half points half vline
     # data_dir = os.path.join('cloud_data', 'points', 'test') # just points
-    data_dir = os.path.join('cloud_data', 'testing', 'single_points')
-    print('data directory: ', data_dir)
+    # data_dir = os.path.join('cloud_data', 'testing', 'single_points')
     # data_dir = os.path.join('cloud_data', 'testing', 'just_points') # a vline with a point next to it
-    # data_dir = os.path.join('cloud_data', 'testing', 'mixed_stuff')
+    data_dir = os.path.join('cloud_data', 'testing', 'mixed_stuff')
+    print('data directory: ', data_dir)
     net_input_name = 'polar_partial_mag_phase'
     target_name = 'polar_full'
     data_list = os.listdir(data_dir)[0:-1]
@@ -82,6 +82,7 @@ if __name__ == '__main__':
     check_all = False
     nums_examine = 100
     nums_examined = 0
+    show_every = 15
 
     mse = nn.MSELoss(reduction = 'sum')
     bce = nn.BCELoss(reduction = 'mean')
@@ -107,7 +108,7 @@ if __name__ == '__main__':
         
         total_error += loss.item()
         # plt.figure()
-        if nums_examined % 20 == 0:
+        if nums_examined % show_every == 0:
             print(sample['file_path'])
             print(loss)
 
