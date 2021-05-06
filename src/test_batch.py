@@ -33,7 +33,7 @@ if __name__ == '__main__':
     model_path = 'points_polar_phase_10000x100_mag_phase_polar_big.pt' # last trained on 10000 things, see 4/5
     # model_path = 'points_polar_phase_10000x100_mag_phase_polar_big_bce.pt' # same as the above but bce loss not sure how many epochs i trained this on
     # model_path = 'fine_tune_polar_phase_fine_tune_pre_trained0.pt' # fine tuned with hard examples
-    # model_path = os.path.join('models_trained', 'point_model2d_final.pt')
+    # model_path = 'norm_mse_10000x5_mag_phase_polar_big.pt'
     model = torch.load(model_path, map_location=device)
     model.to(device)
     # model.train()
@@ -48,9 +48,10 @@ if __name__ == '__main__':
 # import matplotlib.pyplot as plt
     # data_dir = os.path.join('cloud_data', 'mooooo', 'debug') # half points half vline
     # data_dir = os.path.join('cloud_data', 'points', 'test') # just points
+    data_dir = os.path.join('cloud_data', 'cluster', 'debug') # just points
     # data_dir = os.path.join('cloud_data', 'testing', 'single_points')
     # data_dir = os.path.join('cloud_data', 'testing', 'just_points') # a vline with a point next to it
-    data_dir = os.path.join('cloud_data', 'testing', 'mixed_stuff')
+    # data_dir = os.path.join('cloud_data', 'testing', 'mixed_stuff')
     print('data directory: ', data_dir)
     net_input_name = 'polar_partial_mag_phase'
     target_name = 'polar_full'
@@ -82,11 +83,11 @@ if __name__ == '__main__':
     check_all = False
     nums_examine = 100
     nums_examined = 0
-    show_every = 15
+    show_every = 1
 
     mse = nn.MSELoss(reduction = 'sum')
     bce = nn.BCELoss(reduction = 'mean')
-    mydataset = mydata.PointDataSet(data_dir, data_list, pre_processed = True)
+    mydataset = mydata.PointDataSet(data_dir, data_list, pre_processed = False)
     mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= False, num_workers= 4)
     total_error = 0
     for batch_idx, sample in enumerate(mydataloader):
