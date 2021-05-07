@@ -267,13 +267,13 @@ def display_data(target, output, net_input, target_name, net_input_name):
     extent = [-gen.max_rng, gen.max_rng, 0, gen.max_rng]
 
     fig, axs = plt.subplots(2, 2)
-    axs[0, 0].imshow(target_np,  extent = extent, origin= 'lower')
+    axs[0, 0].imshow(target_np,  extent = extent, origin= 'lower', cmap = 'gray')
     axs[0, 0].set_title('target')
-    axs[1, 0].imshow(output_np, extent = extent, origin= 'lower')
+    axs[1, 0].imshow(output_np, extent = extent, origin= 'lower', cmap = 'gray')
     axs[1, 0].set_title('net output')
-    axs[0, 1].imshow(input0, extent = extent, origin= 'lower')
+    axs[0, 1].imshow(input0, extent = extent, origin= 'lower', cmap = 'gray')
     axs[0, 1].set_title('net input 0')
-    axs[1, 1].imshow(input1, extent = extent, origin= 'lower')
+    axs[1, 1].imshow(input1, extent = extent, origin= 'lower', cmap = 'gray')
     axs[1,1].set_title('net input 1')
 
     plt.show()
