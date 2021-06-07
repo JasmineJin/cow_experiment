@@ -174,6 +174,7 @@ def get_radar_image_pairs(radar_response):
     phase_sin0 = polar_partial0_np.imag/(np.abs(polar_partial0_np) + 10 **(-20))
     phase_cos1 = polar_partial1_np.real/(np.abs(polar_partial1_np) + 10 **(-20))
     phase_sin1 = polar_partial1_np.imag/(np.abs(polar_partial1_np) + 10 **(-20))
+    
     # phase1 = polar_partial1_np.imag/polar_partial1_np.real
     log_mag0 = np.log10(np.abs(polar_partial0_np) + 10 ** (-20))
     log_mag0 = (log_mag0 - np.min(np.min(log_mag0))) / (np.max(np.max(log_mag0)) - np.min(np.min(log_mag0)))
@@ -182,11 +183,61 @@ def get_radar_image_pairs(radar_response):
     polar_partial_np = np.dstack([log_mag0 * phase_cos0, log_mag0* phase_sin0, log_mag1* phase_cos1, log_mag1* phase_sin1])
     polar_partial_np = polar_partial_np.transpose(2, 0, 1)
 
+    phase_tan0 = polar_partial0_np.imag/(polar_partial0_np.real + 10 **(-20))
+    phase_tan1 = polar_partial1_np.imag/(polar_partial1_np.real + 10 **(-20))
     output = {
             'polar_full': polar_full[np.newaxis, :, :],
-            'polar_partial_mag_phase': polar_partial_np
+            'polar_partial_mag_phase': polar_partial_np,
+            'just_phase': np.dstack([np.arctan(phase_tan0), np.arctan(phase_tan1)]).transpose(2, 0, 1)
+
             }
     return output
+
+def get_radar_image_pairs_new(radar_response):
+    """
+    given raw data, return pairs of high and low aperture images
+    """
+    # radar_response_original = copy.deepcopy(radar_response)
+    polar_full = process_array(radar_response)
+    polar_full = np.log10(np.abs(polar_full) + 10 **(-20))
+
+    polar_partial0_np = process_array(radar_response[:, 0: num_samples])
+
+    polar_partial1_np = process_array(radar_response[:, num_channels - num_samples : num_channels])
+
+    phase_cos0 = polar_partial0_np.real/(np.abs(polar_partial0_np) + 10 **(-20))
+    phase_sin0 = polar_partial0_np.imag/(np.abs(polar_partial0_np) + 10 **(-20))
+    phase_cos1 = polar_partial1_np.real/(np.abs(polar_partial1_np) + 10 **(-20))
+    phase_sin1 = polar_partial1_np.imag/(np.abs(polar_partial1_np) + 10 **(-20))
+    
+    # phase1 = polar_partial1_np.imag/polar_partial1_np.real
+    log_mag0 = np.log10(np.abs(polar_partial0_np) + 10 ** (-20))
+    log_mag0 = (log_mag0 - np.min(np.min(log_mag0))) / (np.max(np.max(log_mag0)) - np.min(np.min(log_mag0)))
+    log_mag1 = np.log10(np.abs(polar_partial1_np) + 10 ** (-20))
+    log_mag1 = (log_mag1 - np.min(np.min(log_mag1))) / (np.max(np.max(log_mag1)) - np.min(np.min(log_mag1)))
+    polar_partial_np = np.dstack([phase_cos0, phase_sin0, phase_cos1, phase_sin1])
+    polar_partial_np = polar_partial_np.transpose(2, 0, 1)
+
+    phase_tan0 = polar_partial0_np.imag/(polar_partial0_np.real + 10 **(-20))
+    phase_tan1 = polar_partial1_np.imag/(polar_partial1_np.real + 10 **(-20))
+    output = {
+            'polar_full': polar_full[np.newaxis, :, :],
+            'phase_cos0': phase_cos0,
+            'phase_cos1': phase_cos1,
+            'phase_sin0': phase_sin0,
+            'phase_sin1': phase_sin1,
+            'multiplied_cos0':log_mag0 * phase_cos0,
+            'multiplied_sin0': log_mag0 * phase_sin0
+            # 'polar_partial_mag_phase': polar_partial_np,
+            # 'just_phase': np.dstack([np.arctan(phase_tan0), np.arctan(phase_tan1)]).transpose(2, 0, 1)
+            
+            }
+    return output
+
+def norm01_2d(data):
+    min_data = np.min(np.min(data))
+    max_data = np.max(np.max(data))
+    return (data - min_data)/ (max_data - min_data)
 
 def get_vline(start_x, start_y, depth):
     # start_x = np.random.randn() #+ max_rng- max_rng

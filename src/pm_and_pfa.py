@@ -27,10 +27,11 @@ from numpy.fft import fft, ifft
 
 if __name__ == '__main__':
     print('finished importing stuff')
+    extent = [-1, 1, 0, gen.max_rng]
     device = torch.device('cpu')
     # model_path = 'single_point1000x100_autoencoder_newmodel_small_polar.pt'
-    # model_path = 'points_polar_phase_mag_phase_polar_small_bce.pt' # last trained on 1000 things just points see 3/26
-    model_path = 'points_polar_phase_10000x100_mag_phase_polar_big.pt' # last trained on 10000 things, see 4/5
+    model_path = 'points_polar_phase_mag_phase_polar_small_bce.pt' # last trained on 1000 things just points see 3/26
+    # model_path = 'points_polar_phase_10000x100_mag_phase_polar_big.pt' # last trained on 10000 things, see 4/5
     # model_path = 'points_polar_phase_10000x100_mag_phase_polar_big_bce.pt' # same as the above but bce loss not sure how many epochs i trained this on
     # model_path = 'fine_tune_polar_phase_fine_tune_pre_trained0.pt' # fine tuned with hard examples
     # model_path = 'norm_mse_10000x5_mag_phase_polar_big.pt'
@@ -38,7 +39,7 @@ if __name__ == '__main__':
     model.to(device)
     # model.train()
     print('loaded model: ' + model_path)
-    summary(model, (4, 512, 1024))
+    # summary(model, (4, 512, 1024))
     # print(model)
 
     # data_dir = os.path.join('../cloud_data', 'points', 'train')
@@ -46,13 +47,12 @@ if __name__ == '__main__':
     # target_name = 'polar_full2d_q1'
     # data_list = os.listdir(data_dir)
     # data_path = os.path.join(data_dir, data_list[0], net_input_name, target_name)
-# import matplotlib.pyplot as plt
     # data_dir = os.path.join('cloud_data', 'mooooo', 'debug') # half points half vline
     # data_dir = os.path.join('cloud_data', 'points', 'test') # just points
-    data_dir = os.path.join('cloud_data', 'cluster', 'test') # just points
+    # data_dir = os.path.join('cloud_data', 'cluster', 'test') # just points
     # data_dir = os.path.join('cloud_data', 'testing', 'single_points')
     # data_dir = os.path.join('cloud_data', 'testing', 'just_points') # a vline with a point next to it
-    # data_dir = os.path.join('cloud_data', 'testing', 'mixed_stuff')
+    data_dir = os.path.join('cloud_data', 'testing', 'mixed_stuff')
     print('data directory: ', data_dir)
     net_input_name = 'polar_partial_mag_phase'
     target_name = 'polar_full'
@@ -84,46 +84,76 @@ if __name__ == '__main__':
     check_all = False
     nums_examine = 100
     nums_examined = 0
-    show_every = 1
+    show_every = 100
 
     mse = nn.MSELoss(reduction = 'sum')
     bce = nn.BCELoss(reduction = 'mean')
-    mydataset = mydata.PointDataSet(data_dir, data_list, pre_processed = False)
+    mydataset = mydata.PointDataSet(data_dir, data_list, pre_processed = True)
     mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= False, num_workers= 4)
     total_error = 0
+    average_probability_detection = 0
+    average_probability_false_alarm = 0
     for batch_idx, sample in enumerate(mydataloader):
-        # nums_examined += 1
-        # print(nums_examined)
-        
-        
         target = sample[target_name]
         target = mydata.norm01(target)
         net_input = sample[net_input_name]
-        # net_input = mydata.norm01(net_input)
-        net_output = model(net_input)
 
-        # print(sample['x_points'])
-        # print(sample['y_points'])
-        # display_data(target, target, net_input, target_name, net_input_name)
-        loss = mse(net_output, target)
-        # loss = loss / torch.sum(torch.abs(target))
-        
-        total_error += loss.item()
+        net_output = model(net_input)
+        net_output = mydata.norm01(net_output)
+        net_output_np = net_output.detach().numpy()[0, 0, :, :]
+        target_np = target.detach().numpy()[0, 0, :, :]
+
+        # target_thresholded = gen.apply_threshold_per_row(target_np, 0.1, 0.3)
+        target_thresholded = target_np > 0.9
         # plt.figure()
+        # plt.imshow(target_thresholded)
+        # plt.title('target detection')
+        # output_thresholded = gen.apply_threshold_per_row(net_output_np, 0.3, 0.3)
+        output_thresholded = net_output_np > 0.7
+        # plt.figure()
+        # plt.imshow(output_thresholded)
+        # plt.title('output detection')
+        # # loss = mse(net_output, target)
+        # plt.show()
+        error = target_np - net_output_np
+        mse = np.sum(np.sum(error * error))
+        total_error += mse
+        detection  = output_thresholded * target_thresholded
+        false_alarm = output_thresholded * (1 - target_thresholded)
+        probability_false_alarm = np.sum(np.sum(false_alarm)) / np.sum(np.sum(1 - target_thresholded)) * 100
+        probability_detection = np.sum(np.sum(detection)) / np.sum(np.sum(target_thresholded)) * 100
+        average_probability_detection += probability_detection
+        average_probability_false_alarm += probability_false_alarm
+        nums_examined += 1
         if nums_examined % show_every == 0:
             print(sample['file_path'])
-            print(loss)
+            # print(loss)
 
-            mydata.plot_labeled_grid(net_input, net_output, target)
-            # inputgrid = mydata.get_input_image_grid(net_input, net_input_name)
-            # mydata.matplotlib_imshow(inputgrid, 'input')
-            # plt.figure()
-            # img_grid = mydata.get_output_target_image_grid(net_output, target, target_name)
-            # mydata.matplotlib_imshow(img_grid, 'output and target')
-            # print(inputgrid.size())
+            # mydata.plot_labeled_grid(net_input, net_output, target)
+            # plt.show()
+            fig, axs = plt.subplots(2, 2)
+            pos0 = axs[0, 0].imshow(net_output_np, extent = extent, origin= 'lower', aspect = 'auto', cmap = 'gray')
+            axs[0, 0].set_title('net output')
+            axs[0, 0].set_xlabel('cos(AoA)')
+            axs[0, 0].set_ylabel('range (m)')
+            # cbar = fig.colorbar(pos0)
+            pos1 = axs[0, 1].imshow(target_np, extent = extent, origin= 'lower', aspect = 'auto', cmap = 'gray')
+            axs[0, 1].set_title('target')
+            axs[0, 1].set_xlabel('cos(AoA)')
+            axs[0, 1].set_ylabel('range (m)')
+            pos3 = axs[1,0].imshow(output_thresholded, extent = extent, origin= 'lower', aspect = 'auto', cmap = 'gray')
+            axs[1,0].set_title('Prediction')
+            axs[1,0].set_xlabel('cos(AoA)')
+            axs[1,0].set_ylabel('range (m)')
+            pos4 = axs[1,1].imshow(target_thresholded, extent = extent, origin= 'lower', aspect = 'auto', cmap = 'gray')
+            axs[1,1].set_title('Target')
+            axs[1,1].set_xlabel('cos(AoA)')
+            axs[1,1].set_ylabel('range (m)')
+            print('pd: ', probability_detection)
+            print('pfa: ', probability_false_alarm)
             plt.show()
-        nums_examined += 1
-        # if nums_examined >= nums_examine:
-        #     break
-
-    print('average se: ', total_error / nums_examine)
+            
+        # break
+    print('average probability detection: ', average_probability_detection / nums_examine)
+    print('average probability false alarm: ', average_probability_false_alarm / nums_examine)
+    print('average mse: ', total_error / nums_examine)
