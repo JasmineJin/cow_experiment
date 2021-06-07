@@ -2,7 +2,7 @@
 
 This repository contains the python code for training neural networks on simulated radar response to ideal point reflectors for the purpose of radar signal super-resolution. 
 
-This work was done as part of Mumin Jin's MEng Thesis titled *Machine Learning Methods for Super-Resolution inSparse Sensor Arrays*
+This work was done as part of Mumin Jin's MEng thesis titled *Machine Learning Methods for Super-Resolution inSparse Sensor Arrays*
 
 **Requirements**
 
