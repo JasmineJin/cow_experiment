@@ -32,8 +32,5 @@
     "pre_processed": true, 
     "exp_name": "mag_phase_run_new",
     "final_act": "relu",
-    "norm": true,
-    "quantize": 8
-
-
+    "norm": true
 }

@@ -56,7 +56,7 @@ if __name__ == '__main__':
     # check device
     ##########################################################################
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    print(device)
+    print("using device: ", device)
     ##########################################################################
     # parse arguments from file
     ##########################################################################
@@ -95,7 +95,6 @@ if __name__ == '__main__':
     
     model.to(device)
     print('created model: ')
-    # print(model)
 
     #########################################################################
     # define loss function 
@@ -105,7 +104,7 @@ if __name__ == '__main__':
     elif args.loss_type == 'norm_mse':
         mse = nn.MSELoss(reduction = args.reduction)
         def myloss(output, target):
-            return mse(output, target) / torch.sum(torch.abs(target)) #+ 0.0001 * torch.sum(torch.abs(output))
+            return mse(output, target) / torch.sum(torch.abs(target))
     elif args.loss_type == 'log_bce':
         bce = nn.BCELoss(reduction = args.reduction)
         def myloss(output, target):
@@ -186,10 +185,10 @@ if __name__ == '__main__':
         # go through training data
         model.train()
         for batch_idx, sample in enumerate(train_dataloader):           
-            target = sample[target_name]#[:, 0, :, :].unsqueeze(1)
+            target = sample[target_name]
             if args.norm:
                 target = mydata.norm01(target)
-                # target = mydata.quantizer(target, 0, 1, 2 ** args.quantize)
+                
             target = target.to(device)
 
             net_input = sample[net_input_name]
@@ -216,15 +215,8 @@ if __name__ == '__main__':
             target = sample[target_name]#[:, 0, :, :].unsqueeze(1)
             if args.norm:
                 target = mydata.norm01(target)
-                # target = mydata.quantizer(target, 0, 1, 2 ** args.quantize)
-            # target = sample[target_name]
-            # if args.train_auto:
-            #     net_input = target
-        # else:
+
             net_input = sample[net_input_name]
-            # if args.norm:
-            #     net_input = mydata.norm01(net_input)
-                    # net_input = mydata.quantizer(net_input, 0, 1, 2** args.quantize)
             target = target.to(device)
             net_input = net_input.to(device)
             #forward
@@ -242,14 +234,9 @@ if __name__ == '__main__':
 
         # log data into writer 
         if e % log_every == 0:
-            # img_grid = mydata.get_output_target_image_grid(myoutput, target, target_name)
-            # writer.add_image('output and target pair after epoch ' + str(e), img_grid)
             writer.add_scalar('validation loss', val_loss, e)
             writer.add_scalar('training loss', train_loss, e)
-            # if args.show_image:
-            #     mydata.display_data(target, myoutput, net_input, target_name, net_input_name)
 
-        # print stuff and display stuff 
         if e % print_every == 0:
             print(e, 'train loss', train_loss)
             print(e, 'val loss', val_loss)
@@ -260,11 +247,8 @@ if __name__ == '__main__':
                 plt.figure()
                 mydata.matplotlib_imshow(img_grid, 'output and target')
                 print('showing ', sample['file_path'])
-                # inputgrid = mydata.get_input_image_grid(net_input, net_input_name)
-                # plt.figure()
-                # mydata.matplotlib_imshow(inputgrid, 'input')
+
                 plt.show()
-                # mydata.display_data(target, myoutput, net_input, target_name, net_input_name)
 
         # check model updates
         if check_every != 0 and e % check_every == 0:
@@ -274,7 +258,6 @@ if __name__ == '__main__':
                 if grad == None:
                     print(e)
                     raise ValueError('found some grad none')
-                    # everything_is_good = False
 
             new_states = copy.deepcopy(model.state_dict())
             for state_name in new_states:
@@ -283,7 +266,7 @@ if __name__ == '__main__':
                 if torch.equal(old_state, new_state):
                     print(state_name, 'not changed')
                     everything_is_good = False
-            print('everything is good?', everything_is_good)
+            print('model weights changed?', everything_is_good)
             curr_states = new_states
             
     writer.close()

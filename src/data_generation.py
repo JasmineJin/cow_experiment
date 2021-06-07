@@ -32,14 +32,16 @@ antenna_array = antenna_array - antenna_array[-1] / 2
 
 Pmax = 100
 ################################################################################################
-##### data generation code 
+# data generation code 
 
 def add_point(point_x, point_y):
-
     """
-    return the raw data of radar response for single point source at [point_x, point_y]
-    Pmax = max power
-    plot figures if show_figs
+    Inputs:
+        point_x: x coordinate of the ideal point reflector
+        point_y: y_coordinate of the ideal point reflector
+    output:
+        array_response: 2d complex numpy array, the echoed signals from the ideal point reflector
+                        at each radar element
     """
     x_diff = antenna_array - point_x
     y_diff = point_y
@@ -63,7 +65,10 @@ def add_point(point_x, point_y):
 
 def process_array(array_response):
     """
-    process array
+    input:
+        array_response: complex 2d-numpy array, raw echoed signals
+    output:
+        angle_processed: complex 2d-numpy array 2d-dft results of input with windowing
     """
     # print('array response shape: ', array_response.shape)
     range_window = np.hanning(num_range_bins)
@@ -80,21 +85,13 @@ def process_array(array_response):
 
     return angle_processed
 
-def apply_threshold_per_row(matrix, dip1, dip_oeverall):
-    max_value = np.max(np.max(matrix))
-    threshold_overall = max_value - dip_oeverall
-    thresholding_mtx = np.ones(matrix.shape)
-    for i in range(matrix.shape[0]):
-        row = matrix[i, :]
-        peak = np.max(row)
-        thresholding_mtx[i, row < (peak - dip1)] = 0
-        thresholding_mtx[i, row < threshold_overall] = 0
-    return thresholding_mtx
-        
 def get_scene_raw_data(all_point_x, all_point_y):
     """
-    given collection of points whose x coordinates are in all_point_x and y coordinates are in all_point_y,
-    save the raw data to save_path if save path is not empty
+    inputs: 
+        all_point_x: list of x-coordinates of point reflectors
+        all_point_y: list of corresponding y-coordinates of point reflectors
+    output:
+        radar_response: 2d complex numpy array, the echoed signals
     """
     assert(len(all_point_x) == len(all_point_y))
     num_points = len(all_point_x)
@@ -106,57 +103,15 @@ def get_scene_raw_data(all_point_x, all_point_y):
         point_y = all_point_y[i]
         radar_response += add_point(point_x, point_y)
 
-    # if save_path != '':
-    #     np.savez_compressed(save_path, 
-    #                 raw_data = radar_response,
-    #                 x_points = all_point_x,
-    #                 y_points = all_point_y)
-
     return radar_response
-
-def get_ground_truth(all_point_x, all_point_y):
-    gt_grid = np.zeros([num_range_bins, num_channels])
-    for i in range(len(all_point_x)):
-        x = all_point_x[i]
-        y = all_point_y[i]
-        # print( 'location: ', x, y)
-
-        obj_rng = np.sqrt(x ** 2 + y ** 2)
-        obj_ang = x / (obj_rng)
-        # print('obj cos angle: ', obj_ang)
-        obj_rng_idx = obj_rng / rng_res
-        if obj_rng_idx > 512 - 1:
-            continue
-        obj_ang_idx = min((obj_ang + 1) / (2 / num_channels), num_channels - 1)
-        # print('location: ', int(obj_rng_idx), int(obj_ang_idx))
-        gt_grid[int(obj_rng_idx), int(obj_ang_idx)] = 1
-    return gt_grid
-
-def get_normal_plot_label(all_point_x, all_point_y):
-    """
-    given the list of points, create the ground truth plot in xy coordinates
-    """
-    assert(len(all_point_x) == len(all_point_y))
-    num_points = len(all_point_x)
-
-    normal_plot_label = np.zeros((normal_h, normal_w))
-    rng_vector = np.arange(num_range_bins) * rng_res
-    _, x, y = trans.polar_to_rect(normal_plot_label, wl, num_channels, rng_vector, normal_h, normal_w)
-    
-    x_res = x[1] - x[0]
-    y_res = y[1] - y[0]
-    for i in range(num_points):
-        point_x = all_point_x[i]
-        point_y = all_point_y[i]
-        col = int((point_x - x[0])/ x_res)    
-        row = int((point_y - y[0])/ y_res)
-        normal_plot_label[row, col] = 1
-
-    return normal_plot_label
 
 def get_radar_image_pairs(radar_response):
     """
-    given raw data, return pairs of high and low aperture images
+    input: 
+        radar_response: 2d complex numpy array, the echoed signals
+    output:
+        polar_full: 3d-numpy array, log magnitude of full array results
+        polar_partial_mag_phase 3d-numpy array, normalized log-magnitude times cos/sin of phase of sub-array results
     """
     # radar_response_original = copy.deepcopy(radar_response)
     polar_full = process_array(radar_response)
@@ -184,59 +139,28 @@ def get_radar_image_pairs(radar_response):
     output = {
             'polar_full': polar_full[np.newaxis, :, :],
             'polar_partial_mag_phase': polar_partial_np,
-            'just_phase': np.dstack([np.arctan(phase_tan0), np.arctan(phase_tan1)]).transpose(2, 0, 1)
-
-            }
-    return output
-
-def get_radar_image_pairs_new(radar_response):
-    """
-    given raw data, return pairs of high and low aperture images
-    """
-    # radar_response_original = copy.deepcopy(radar_response)
-    polar_full = process_array(radar_response)
-    polar_full = np.log10(np.abs(polar_full) + 10 **(-20))
-
-    polar_partial0_np = process_array(radar_response[:, 0: num_samples])
-
-    polar_partial1_np = process_array(radar_response[:, num_channels - num_samples : num_channels])
-
-    phase_cos0 = polar_partial0_np.real/(np.abs(polar_partial0_np) + 10 **(-20))
-    phase_sin0 = polar_partial0_np.imag/(np.abs(polar_partial0_np) + 10 **(-20))
-    phase_cos1 = polar_partial1_np.real/(np.abs(polar_partial1_np) + 10 **(-20))
-    phase_sin1 = polar_partial1_np.imag/(np.abs(polar_partial1_np) + 10 **(-20))
-    
-    # phase1 = polar_partial1_np.imag/polar_partial1_np.real
-    log_mag0 = np.log10(np.abs(polar_partial0_np) + 10 ** (-20))
-    log_mag0 = (log_mag0 - np.min(np.min(log_mag0))) / (np.max(np.max(log_mag0)) - np.min(np.min(log_mag0)))
-    log_mag1 = np.log10(np.abs(polar_partial1_np) + 10 ** (-20))
-    log_mag1 = (log_mag1 - np.min(np.min(log_mag1))) / (np.max(np.max(log_mag1)) - np.min(np.min(log_mag1)))
-    polar_partial_np = np.dstack([phase_cos0, phase_sin0, phase_cos1, phase_sin1])
-    polar_partial_np = polar_partial_np.transpose(2, 0, 1)
-
-    phase_tan0 = polar_partial0_np.imag/(polar_partial0_np.real + 10 **(-20))
-    phase_tan1 = polar_partial1_np.imag/(polar_partial1_np.real + 10 **(-20))
-    output = {
-            'polar_full': polar_full[np.newaxis, :, :],
-            'phase_cos0': phase_cos0,
-            'phase_cos1': phase_cos1,
-            'phase_sin0': phase_sin0,
-            'phase_sin1': phase_sin1,
-            'multiplied_cos0':log_mag0 * phase_cos0,
-            'multiplied_sin0': log_mag0 * phase_sin0
-            # 'polar_partial_mag_phase': polar_partial_np,
-            # 'just_phase': np.dstack([np.arctan(phase_tan0), np.arctan(phase_tan1)]).transpose(2, 0, 1)
-            
-            }
+       }
     return output
 
 def norm01_2d(data):
+    """
+    input: 2d-numpy array
+    output: normalized input in range [0, 1] 
+    """
     min_data = np.min(np.min(data))
     max_data = np.max(np.max(data))
     return (data - min_data)/ (max_data - min_data)
 
 def get_vline(start_x, start_y, depth):
-    # start_x = np.random.randn() #+ max_rng- max_rng
+    """
+    inputs:
+        start_x: x-coordinate of the first point reflector in a vertical line
+        start_y: y-coordinate of the first point reflector in a vertical line
+        depth: integer, number of point reflectors in the vertical line
+    outputs:
+        all_point_x: x-coordinates of all the points in a vertical line
+        all_points_y: corresponding y-coordinates of all the points in a vertical line
+    """
     if start_x > max_rng * 0.8:
         start_x = max_rng * 0.8
     if start_x < - max_rng * 0.8:
@@ -246,32 +170,21 @@ def get_vline(start_x, start_y, depth):
     all_point_x = np.ones(all_point_y.shape) * start_x
     return all_point_x, all_point_y
 
-def get_cluster(center_x, center_y, cluster_size, spread_x, spread_y):
-    cluster_x = np.random.randn(cluster_size) * spread_x + center_x
-    cluster_y = np.random.randn(cluster_size) * spread_y + center_y
-    cluster_x[cluster_x > max_rng] = max_rng
-    cluster_x[cluster_x < - max_rng] = - max_rng
-    cluster_y[cluster_y > max_rng] = max_rng
-    cluster_y[cluster_y < max_rng * 0.2] = max_rng * 0.2
-    return cluster_x, cluster_y
-
-def get_hline():
-    start_x = np.random.rand() * max_rng * 2 - max_rng
-    start_y = np.random.rand() * max_rng
-    all_point_x = np.arange(100) * rng_res/2 + start_y
-    all_point_y = np.ones(all_point_x.shape) * start_x
-    return all_point_x, all_point_y
-
-def get_random_point(num_points):
-    
+def get_random_point(num_points = 1): 
+    """
+    input:
+        num_points: the number of random points
+    outputs:
+        all_point_x: x-coordinates of the random points
+        all_points_y: corresponding y-coordinates of the random points
+    """
     all_ranges = np.random.randn(num_points) * max_rng * 0.3
     all_ranges = all_ranges + max_rng / 2
     all_ranges[all_ranges< max_rng * 0.2] = max_rng * 2
     all_ranges[all_ranges > max_rng * 0.8] = max_rng * 0.8
-    #  * max_rng * 0.8 + max_rng * 0.1
     all_angles = np.random.randn(num_points)
     all_angles[all_angles > 0.8 * np.pi] = 0.8 * np.pi
-    all_angles[all_angles < - 0.8 * np.pi] = - 0.8 * np.pi# * np.pi
+    all_angles[all_angles < - 0.8 * np.pi] = - 0.8 * np.pi
     all_point_x = all_ranges * np.cos(all_angles)
     all_point_y = all_ranges * np.sin(all_angles)
     return all_point_x, all_point_y
