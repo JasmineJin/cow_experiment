@@ -116,6 +116,11 @@ def get_radar_image_pairs(radar_response):
     # radar_response_original = copy.deepcopy(radar_response)
     polar_full = process_array(radar_response)
     polar_full = np.log10(np.abs(polar_full) + 10 **(-20))
+    
+    middle_response = radar_response[:, 500: 524]
+    polar_middle = process_array(middle_response)
+    # print('polar middle size', middle_response.shape)
+    polar_middle = np.log10(np.abs(polar_middle) + 10 **(-20))
 
     polar_partial0_np = process_array(radar_response[:, 0: num_samples])
 
@@ -134,11 +139,10 @@ def get_radar_image_pairs(radar_response):
     polar_partial_np = np.dstack([log_mag0 * phase_cos0, log_mag0* phase_sin0, log_mag1* phase_cos1, log_mag1* phase_sin1])
     polar_partial_np = polar_partial_np.transpose(2, 0, 1)
 
-    phase_tan0 = polar_partial0_np.imag/(polar_partial0_np.real + 10 **(-20))
-    phase_tan1 = polar_partial1_np.imag/(polar_partial1_np.real + 10 **(-20))
     output = {
             'polar_full': polar_full[np.newaxis, :, :],
             'polar_partial_mag_phase': polar_partial_np,
+            'polar_middle': polar_middle[np.newaxis, :, :],
        }
     return output
 
@@ -264,9 +268,11 @@ if __name__ == '__main__':
         np.savez_compressed(save_path, all_point_x = all_point_x, 
                 all_point_y = all_point_y,
                 polar_full = processed['polar_full'],
-                polar_partial_mag_phase = processed['polar_partial_mag_phase']
+                polar_partial_mag_phase = processed['polar_partial_mag_phase'],
+                polar_middle = processed['polar_middle']
+
 
                 )
 
-        if n % 100 == 0:
+        if n % 10 == 0:
             print(n)

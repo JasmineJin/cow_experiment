@@ -9,6 +9,7 @@ import data_generation as gen
 import torchvision
 import torchvision.transforms as transforms
 from PIL import Image
+import argparse
 #################################################################################################################
 # dataset for training with pytorch
 # other fun plotting functions to visualize data
@@ -42,6 +43,7 @@ class PointDataSet(data.Dataset):
 
             mydata['polar_full'] = torch.from_numpy(npzfile['polar_full']).type(torch.float)
             mydata['polar_partial_mag_phase'] = torch.from_numpy(npzfile['polar_partial_mag_phase']).type(torch.float)
+            mydata['polar_middle'] = torch.from_numpy(npzfile['polar_middle']).type(torch.float)
         else:
             raw_data = gen.get_scene_raw_data(x_points, y_points)
             processed = gen.get_radar_image_pairs(raw_data)
@@ -143,12 +145,12 @@ if __name__ == '__main__':
     ###############################################################################
     show_figs = True
     check_all = False
-    nums_examine = args.nums_show
+    nums_examine = min(args.nums_show, len(data_list))
     nums_examined = 0
 
     mse = nn.MSELoss(reduction = 'sum')
 
-    mydataset = PointDataSet(data_dir, data_list)
+    mydataset = PointDataSet(data_dir, data_list, pre_processed = True)
     mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= False, num_workers= 4)
     
     myiter = iter(mydataloader)

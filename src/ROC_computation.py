@@ -47,11 +47,11 @@ if __name__ == '__main__':
     
     model = torch.load(model_path, map_location=device)
     model.to(device)
-    if mode == 'model':
+    if args.mode == 'model':
         print('loaded model: ' + model_path)
     net_input_name = 'polar_partial_mag_phase'
     target_name = 'polar_full'
-    data_list = os.listdir(data_dir)[0:-1]
+    data_list = os.listdir(data_dir)
 
     show_figs = True
     check_all = False
@@ -62,6 +62,7 @@ if __name__ == '__main__':
     mse = nn.MSELoss(reduction = 'sum')
     bce = nn.BCELoss(reduction = 'mean')
     mydataset = mydata.PointDataSet(data_dir, data_list, pre_processed = True)
+    print('number of samples in data list:', len(data_list))
     mydataloader = data.DataLoader(mydataset, batch_size = 1, shuffle= False, num_workers= 4)
     eta_vector = np.linspace(0, 1, num = 100)
     pd_vector = np.zeros(eta_vector.shape)
@@ -74,14 +75,23 @@ if __name__ == '__main__':
         average_probability_false_alarm = 0
         nums_examined = 0
         for batch_idx, sample in enumerate(mydataloader):
+            # print('hello')
             target = sample[target_name]
             target = mydata.norm01(target)
             net_input = sample[net_input_name]
-            if use_baseline:
+            if args.mode == 'baseline':
                 net_input_np = net_input.detach().numpy()
                 net_cos0 = net_input_np[0, 0, :, :]
                 net_sin0 = net_input_np[0, 1, :, :]
-                net_output_np = np.abs(net_cos0 + 1j * net_sin0)
+                net_output_np0 = np.abs(net_cos0 + 1j * net_sin0)
+                net_cos1 = net_input_np[0, 2, :, :]
+                net_sin1 = net_input_np[0, 3, :, :]
+                net_output_np1 = np.abs(net_cos1 + 1j * net_sin1)
+                net_output_np = net_output_np0 + net_output_np1
+
+            elif args.mode == 'middle24':
+                net_output_np = sample['polar_middle'].detach().numpy()
+                
             else:
                 net_output = model(net_input)
                 net_output_np = net_output.detach().numpy()[0, 0, :, :]
@@ -126,8 +136,11 @@ if __name__ == '__main__':
                 print('pd: ', probability_detection)
                 print('pfa: ', probability_false_alarm)
                 plt.show()
-        pd_vector[eta_idx] = average_probability_detection
-        pfa_vector[eta_idx] = average_probability_false_alarm
+        
+        pd_vector[eta_idx] = average_probability_detection / nums_examined
+        pfa_vector[eta_idx] = average_probability_false_alarm / nums_examined
+        print('pfa', average_probability_false_alarm / nums_examined)
+        print('pd', average_probability_detection / nums_examined)
     
     plt.figure()
     plt.title('ROC')
